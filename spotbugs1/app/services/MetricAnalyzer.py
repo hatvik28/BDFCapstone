@@ -118,8 +118,12 @@ class BaseCKAnalyzer:
 
     def get_metrics_for_file(self, filename, source_dir, output_dir):
         all_metrics = self.run_ck_metrics(source_dir, output_dir)
-        target = os.path.basename(filename).strip().lower()
+        target_file = os.path.basename(filename).strip().lower()
+        # Remove extension to get class name
+        target_class = os.path.splitext(target_file)[0]
+
         matches = []
+        primary_matches = []  # For classes that match the filename
 
         for row in all_metrics:
             file_path = row.get("file", "")
@@ -129,13 +133,19 @@ class BaseCKAnalyzer:
             base = os.path.basename(file_path).strip().lower()
 
             if (
-                base == target and
+                base == target_file and
                 type_name == "class" and
                 "$" not in class_name  # Exclude anonymous/inner classes
             ):
-                matches.append(row)
+                # Check if class name matches the filename (case-insensitive)
+                if class_name.lower() == target_class:
+                    primary_matches.append(row)
+                else:
+                    matches.append(row)
 
-        return matches
+        # Return priority matches first (classes matching filename), then other matches
+        # This ensures the frontend gets the matching class first
+        return primary_matches + matches
 
 
 class CKMetricsAnalyzer(BaseCKAnalyzer):
@@ -170,7 +180,6 @@ class SolutionMetricsAnalyzer(BaseCKAnalyzer):
     def __init__(self):
         super().__init__()
         self.metrics_cache = MetricsCache()  # Initialize own cache instance
-
 
     def calculate_metrics_for_applied_solution(self, filename, solution_dir, solution_number):
         """Calculate metrics for an applied solution."""
@@ -210,3 +219,4 @@ class SolutionMetricsAnalyzer(BaseCKAnalyzer):
             self.metrics_cache.set(cache_key, file_metrics)
 
         return file_metrics
+
