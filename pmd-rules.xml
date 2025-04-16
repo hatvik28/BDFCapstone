@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Custom Bug Rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 
+         http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
+
+    <description>
+        Ruleset to detect injected bugs in BadCodeExample.java
+    </description>
+
+    
+
+    <!-- Unused private fields -->
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateField" />
+
+
+    <!-- Avoid empty catch blocks -->
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock" />
+
+    <!-- Always-true if conditions -->
+    <rule ref="category/java/errorprone.xml/UnconditionalIfStatement" />
+
+    <!-- Excessive number of parameters -->
+    <rule ref="category/java/design.xml/ExcessiveParameterList" />
+
+</ruleset>

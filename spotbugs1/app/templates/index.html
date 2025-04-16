@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Bug Detection</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #1e272f;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            background-color: #2a2a40;
+            margin: 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .dashboard {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #1b1b5c;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid #333;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        .results-section {
+            display: flex;
+            gap: 20px;
+            height: 300px;
+            min-height: 300px;
+        }
+
+        .results-container, .solution-container {
+            flex: 1;
+            background: #2a2a40;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .results-container h3, .solution-container h3 {
+            margin: 0;
+            padding: 15px;
+            background: #1b1b5c;
+            color: #fff;
+            font-size: 1.2rem;
+        }
+
+        #results, #solutionDisplay {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #fff;
+            color: #000;
+        }
+
+        .code-sections {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .panel {
+            flex: 1;
+            background: #2a2a40;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel h3 {
+            margin: 0;
+            padding: 15px;
+            background: #1b1b5c;
+            color: #fff;
+            font-size: 1.2rem;
+        }
+
+        #codePreview, #fixedCodePreview {
+            flex: 1;
+            overflow: auto;
+            padding: 15px;
+            margin: 0;
+            background: #fff;
+            color: #000;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Form Controls */
+        .form-control, .form-select {
+            background-color: #2a2a40;
+            border: 1px solid #444;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: #2a2a40;
+            border-color: #666;
+            color: #fff;
+            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.1);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: #2c3e50;
+            border: none;
+        }
+
+        .btn-secondary:hover {
+            background-color: #34495e;
+            transform: translateY(-1px);
+        }
+
+        /* Code display improvements */
+        #codeContainer, #fixedCodeContainer {
+            display: flex;
+            font-family: 'Consolas', monospace;
+            line-height: 1.5;
+            background-color: #fff;
+        }
+
+        #lineNumbers, #fixedLineNumbers {
+            padding: 15px 10px;
+            text-align: right;
+            color: #999;
+            border-right: 1px solid #ddd;
+            user-select: none;
+            background: #f8f9fa;
+        }
+
+        #codeLines, #fixedCodeLines {
+            padding: 15px;
+            flex: 1;
+        }
+
+        /* Bug display improvements */
+        .bug {
+            background: #f8f9fa;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .bug pre {
+            background: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+        }
+
+        /* Metrics table improvements */
+        #metricsDisplay {
+            background: #2a2a40;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        #metricsDisplay table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        #metricsDisplay th, #metricsDisplay td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #444;
+        }
+
+        #metricsDisplay th {
+            background: #1b1b5c;
+            color: #fff;
+        }
+
+        /* Loading spinner improvements */
+        #loadingSpinner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        #loadingSpinner .spinner {
+            background: #2a2a40;
+            padding: 20px 30px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Commit button improvements */
+        #commitChangesBtn {
+            margin: 15px;
+            width: calc(100% - 30px);
+            padding: 10px;
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #commitChangesBtn:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Warning message styling */
+        #warningMessage {
+            display: none;
+            margin: 10px 20px;
+            padding: 15px;
+            border-radius: 4px;
+            background-color: #2a2a40;
+            border: 1px solid #856404;
+            color: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #warningMessage i {
+            margin-right: 10px;
+            color: #ffc107;
+        }
+
+        #warningMessage ul {
+            list-style-type: none;
+            padding-left: 25px;
+            margin: 10px 0;
+        }
+
+        #warningMessage ul li {
+            margin: 5px 0;
+            position: relative;
+        }
+
+        #warningMessage ul li:before {
+            content: "•";
+            color: #ffc107;
+            position: absolute;
+            left: -15px;
+        }
+
+        
+ .login-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .popup-header, .popup-content label {
+            color: black;
+        }
+
+        .popup-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .popup-content {
+            margin-bottom: 20px;
+        }
+
+        .popup input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .popup button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .popup button:hover {
+            background-color: #45a049;
+        }
+
+        .popup .update-btn {
+            background-color: #007BFF;
+        }
+
+        .popup .update-btn:hover {
+            background-color: #0056b3;
+        }
+
+        /*popup background*/
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        /* Apply Solution Button */
+        .apply-solution-btn {
+            padding: 8px 16px;
+            margin-top: 15px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .apply-solution-btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        /* Calculate Metrics Button */
+        .calc-metrics-btn {
+            padding: 8px 16px;
+            background-color: #17a2b8;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .calc-metrics-btn:hover {
+            background-color: #138496;
+            transform: translateY(-1px);
+        }
+
+        .calc-metrics-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Feedback Section Styles */
+        .feedback-section {
+            background-color: #1e1e2d;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .feedback-input {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #2a2a40;
+            border: 1px solid #3a3a50;
+            border-radius: 4px;
+            color: #fff;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .feedback-input:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn-feedback {
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-weight: 500;
+        }
+
+        .btn-submit-feedback {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-submit-feedback:hover {
+            background-color: #218838;
+        }
+
+        .btn-calculate-metrics {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .btn-calculate-metrics:hover {
+            background-color: #138496;
+        }
+
+        .btn-apply-solution {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-apply-solution:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-feedback:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+
+        .metrics-section {
+            margin-top: 15px;
+            background-color: #2a2a40;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="loadingSpinner">
+        <div class="spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Processing...</span>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h1 class="header">Bug Detection and Fixing</h1>
+
+        <div id="warningMessage" class="alert alert-warning" style="display: none; margin: 10px 20px; background-color: #2a2a40; border: 1px solid #856404; color: #fff;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span id="warningText"></span>
+            <ul id="warningRecommendations"></ul>
+        </div>
+
+        <div id="buildAlertContainer" style="display: none;">
+            <div id="buildAlert" class="alert alert-danger alert-dismissible fade show" role="alert">
+              <strong>Build Failed:</strong> <span id="buildAlertMessage"></span>
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+          
+
+        <div class="dashboard">
+            <div class="sidebar">
+                <h4>Penn State</h4>
+                <form id="repoForm" class="mt-3">
+                    <label for="repo_url">Enter GitHub repository URL:</label>
+                    <input type="text" id="repo_url" name="repo_url" class="form-control" required>
+                    <button type="submit" class="btn btn-primary w-100">Analyze</button>
+                </form>
+                <div id="fileSelection" class="mt-3">
+                    <div class="form-group">
+                        <label for="toolDropdown">Select Analysis Tool:</label>
+                        <select id="toolDropdown" class="form-control">
+                            <option value="spotbugs">SpotBugs (Byte-code Analysis)</option>
+                            <option value="pmd">PMD (Static-code Analysis)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fileDropdown">Select Java File:</label>
+                        <select id="fileDropdown" class="form-control">
+                            <!-- Files will be populated here -->
+                        </select>
+                    </div>
+                    <button id="viewFileBtn" class="btn btn-secondary w-100 mt-2">View File</button>
+
+                    <div id="viewFileSpinner" class="spinner" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading file...
+                    </div>
+                    
+                    <div id="metricsDisplay" class="mt-3">
+                        <h4>CK Metrics</h4>
+                    </div>
+                    <div class="metrics-legend mt-3">
+                        <h5>Metric Meanings:</h5>
+                        <ul class="list-unstyled">
+                            <li><strong>FAN-IN:</strong> Number of classes that depend on this class</li>
+                            <li><strong>FAN-OUT:</strong> Number of other classes this class depends on</li>
+                            <li><strong>Fields:</strong> Number of fields in the class</li>
+                            <li><strong>WMC:</strong> Weighted method count</li>
+                            <li><strong>LOC:</strong> Lines of code</li>
+                            <li><strong>Returns:</strong> Quantity of return statements</li>
+                            <li><strong>Loops:</strong> Quantity of loops (for, while, do-while)</li>
+                            <li><strong>Comparisons:</strong> Quantity of conditional statements</li>
+                            <li><strong>Try/Catch:</strong> Quantity of try/catch blocks</li>
+                            <li><strong>Variables:</strong> Quantity of variables declared</li>
+                            <li><strong>Unique Words:</strong> Number of unique identifiers</li>
+                            <li><strong>Has Javadoc:</strong> Whether class has Javadoc</li>
+                            <li><strong>Variable Usage:</strong> How often each variable is used</li>
+                            <li><strong>"Note: Code metrics are automatically generated based on class-level analysis. 
+                                        For projects with multiple classes or complex structures, certain metrics (e.g., WMC, CBO, LOC) 
+                                        may not fully reflect the entire file’s characteristics."</strong></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="content-area">
+                <div class="results-section">
+                    <div class="results-container" id="results">
+                        <h3>Bugs Detected</h3>
+                        <!-- Bugs will be displayed here -->
+                         <!-- Already inside the #solutionDisplay container -->
+
+                    </div>
+                    <div class="solution-container" id="solutionDisplay">
+                        <h3>Solutions</h3>
+                        <p>Select a bug to see the solution here.</p>
+                    </div>
+                </div>
+
+                <div class="code-sections mt-3">
+                    <div class="panel" id="panel1">
+                        <h3>Original Code</h3>
+                        <pre id="codePreview">
+                            <!-- Code Preview -->
+                        </pre>
+                    </div>
+                    <div class="panel" id="panel2">
+                        <h3>Fixed Code</h3>
+                        <pre id="fixedCodePreview">
+                            <!-- Fixed Code Preview -->
+                        </pre>
+                        <button id="commitChangesBtn">Commit Changes to GitHub</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button class="login-btn" id="loginBtn">Login</button>
+<div class="overlay" id="overlay" onclick="closeAllPopups()"></div>
+
+<!-- login popup -->
+<div class="popup" id="loginPopup">
+  <div class="popup-header">Login</div>
+  <div class="popup-content">
+    <label for="username">Username:</label>
+    <input type="text" id="username" placeholder="Enter your username">
+    <label for="password">Password:</label>
+    <input type="password" id="password" placeholder="Enter your password">
+    <button onclick="handleLogin()">Login</button>
+  </div>
+</div>
+
+<!-- API popup -->
+<div class="popup" id="popup">
+  <div class="popup-header">API Key Management</div>
+  <div class="popup-content">
+    <label for="apiKey1">GitHub API Key:</label>
+    <input type="text" id="apiKey1" value="12345-abcde-67890">
+    <button class="update-btn" onclick="saveApiKey('apiKey1')">Update</button>
+    <br>
+    <label for="apiKey2">OpenAI API Key:</label>
+    <input type="text" id="apiKey2" value="54321-edcba-09876">
+    <button class="update-btn" onclick="saveApiKey('apiKey2')">Update</button>
+  </div>
+  <button onclick="closeAllPopups()">Close</button>
+</div>
+
+<script>
+  // show login popup on button click
+  document.getElementById('loginBtn').addEventListener('click', function () {
+    document.getElementById('loginPopup').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
+  });
+
+  // login
+  function handleLogin() {
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+
+    if (user === 'admin' && pass === 'password') {
+      closeAllPopups();
+      openPopup(); // API key popup
+    } else {
+      alert('Invalid credentials. Please try again.');
+    }
+  }
+
+  // API key popup
+  function openPopup() {
+    document.getElementById('popup').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
+  }
+
+  // close popups
+  function closeAllPopups() {
+    document.getElementById('loginPopup').style.display = 'none';
+    document.getElementById('popup').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+  }
+
+  // save API key
+  function saveApiKey(id) {
+    var inputField = document.getElementById(id);
+    var newKey = inputField.value;
+    alert("API Key " + id + " has been updated to: " + newKey);
+  }
+</script>
+
+        <!-- Load JavaScript files in order -->
+    
+    <script src="/static/js/fetchFiles.js"></script>
+    <script src="/static/js/fileViewer.js"></script>
+    <script src="/static/js/llmHandler.js"></script>
+    <script src="/static/js/applySolution.js"></script>
+    <script src="/static/js/validate.js"></script>
+    <script src="/static/js/commit.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

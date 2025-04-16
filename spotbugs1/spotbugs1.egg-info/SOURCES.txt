@@ -1,0 +1,12 @@
+pyproject.toml
+setup.py
+app/JavaAnalysisFacade.py
+app/__init__.py
+app/config.py
+app/routes/__init__.py
+app/routes/routes.py
+spotbugs1.egg-info/PKG-INFO
+spotbugs1.egg-info/SOURCES.txt
+spotbugs1.egg-info/dependency_links.txt
+spotbugs1.egg-info/requires.txt
+spotbugs1.egg-info/top_level.txt
