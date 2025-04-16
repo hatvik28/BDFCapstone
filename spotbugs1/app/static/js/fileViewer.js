@@ -142,9 +142,14 @@ document.getElementById('viewFileBtn').addEventListener('click', function () {
             metricsDiv.innerHTML = '';
 
             if (data.metrics && data.metrics.length > 0) {
+                // Just show metrics for the main class (first in the array)
+                metricsDiv.innerHTML = `<h4 class="mt-3">CK Metrics</h4>`;
+                
+                // Get the main class metrics (should be the one matching the filename)
+                const metricRow = data.metrics[0];
+                
                 const selectedMetrics = ["class", "wmc", "loc", "fanin", "fanout", "returnQty", "loopQty", "comparisonsQty", "tryCatchQty", "variablesQty"];
-
-
+                
                 const metricsTable = document.createElement('table');
                 metricsTable.style.width = "100%";
                 metricsTable.style.borderCollapse = "collapse";
@@ -152,7 +157,6 @@ document.getElementById('viewFileBtn').addEventListener('click', function () {
                 metricsTable.style.backgroundColor = "#2a2a40";
 
                 const tbody = document.createElement('tbody');
-                const metricRow = data.metrics[0];
 
                 selectedMetrics.forEach(key => {
                     if (metricRow[key] !== undefined) {
@@ -178,12 +182,11 @@ document.getElementById('viewFileBtn').addEventListener('click', function () {
                 });
 
                 metricsTable.appendChild(tbody);
-                metricsDiv.innerHTML = `<h4 class="mt-3">CK Metrics</h4>`;
                 metricsDiv.appendChild(metricsTable);
             } else {
                 metricsDiv.innerHTML = "<p>No CK metrics available for this file.</p>";
             }
-
+            
             spinner.style.display = "none";
         })
         .catch(error => {
