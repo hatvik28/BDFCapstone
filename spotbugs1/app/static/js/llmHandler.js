@@ -48,7 +48,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     user_feedback: feedbackInput.value.trim(),
                     solution_number: solutionNumber,
                     filename: bug.file,
-                    bug_line: bug.line
+                    bug_line: bug.line,
+                    file_path: bug.file && !bug.file.startsWith('cloned_repo/') ? `cloned_repo/${bug.file}` : bug.file
                 })
             })
             .then(response => response.json())
@@ -58,8 +59,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                // Update the solution code display
+                // Store the current solution code before updating
                 const solutionCode = solutionBox.querySelector('.solution-code');
+                const previousSolution = solutionCode.textContent.trim();
+                solutionBox.setAttribute('data-previous-solution', previousSolution);
+                
+                // If we got a response about the repository update, store that code
+                if (data.repo_updated) {
+                    solutionBox.setAttribute('data-current-repo-code', data.updated_solution);
+                }
+                
+                // Update the solution code display
                 solutionCode.textContent = data.updated_solution;
 
                 // Clear the feedback input
