@@ -10,7 +10,7 @@ class LLMModel:
         """Generates solutions for a bug using both the bug snippet and the full Java file."""
 
         guideline = [
-            {"role": "system", "content": "You are a Java bug-fixing assistant that generates accurate solutions."},
+            {"role": "system", "content": "You are a Java bug-fixing assistant that generates accurate and complete solutions. Always consider variable reuse and proper scope when fixing bugs."},
             {
                 "role": "user",
                 "content": f"""
@@ -29,13 +29,24 @@ class LLMModel:
 
                 Provide 3 solutions to fix this bug. Each solution must contain:
                 1. A corrected code snippet that shows ONLY the fixed part of the code.
-                2. An explanation of the fix.
-                3. A rating out of 10. The highest-rated solution should be displayed FIRST.
-     
+                2. When handling method return values that could be null (like file paths, optional values, or collection lookups), always:
+                    - Assign the return value to a local variable.
+                    - Check that variable for null.
+                    - Then use the variable.
+                    This is important to satisfy tools like SpotBugs and prevent false positives for null dereferences.
+
+                3. For other potential exceptions or error conditions, include proper error handling and validation appropriate to the specific bug type.
+                4. Include ALL necessary lines of code for the solution to work properly, not just the changed line.
+                5. An explanation of the fix that includes both what was changed and why.
+                6. A rating out of 10. The highest-rated solution should be displayed FIRST.
+            
+    
                 Format your response as follows:
                 Solution X (Rating X/10):
-                <corrected code snippet>
-                Explanation: <explanation of the fix>
+                ```java
+                // Complete code snippet with full context
+                ```
+                Explanation: <detailed explanation of the fix and why it works>
                 
                 """
             }
@@ -46,7 +57,7 @@ class LLMModel:
             "messages": guideline,
             "temperature": 0.2,
             "top_p": 0.9,
-            "max_tokens": 1000
+            "max_tokens": 1500
         }
 
         try:
@@ -188,3 +199,4 @@ class LLMModel:
 
         except Exception as e:
             raise Exception(f"Failed to update solution: {str(e)}")
+
