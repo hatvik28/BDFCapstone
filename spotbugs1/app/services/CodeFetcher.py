@@ -15,6 +15,7 @@ class CodeFetcher:
         self.local_repo_path = None  # path to cloned Git repo
         self.parent_repo_url = None  # path to parent repository
         self.repo = None  # Git repo object
+
     def _validate_token(self, token: str) -> str:
         """Validate the GitHub token and ensure it has necessary permissions."""
         if not token:
@@ -144,6 +145,7 @@ class CodeFetcher:
 
         # Walk through the cloned repo
         for root, _, files in os.walk(self.local_repo_path):
+            print(f"[INFO] Searching in: {root}")
             for file in files:
                 if file.endswith(".java"):
                     full_path = os.path.join(root, file)
@@ -194,86 +196,6 @@ class CodeFetcher:
         print("[ERROR] Invalid GitHub URL format")
         return None, None
 
-    def ensure_clean_build_state(self) -> bool:
-        """Ensure the repository is in a clean state for building."""
-        try:
-            if not self.repo:
-                self.repo = git.Repo(self.local_repo_path)
-
-            # Check if there are uncommitted changes
-            if self.repo.is_dirty():
-                print("[WARNING] Repository has uncommitted changes")
-                return False
-
-            # Check if we're on a detached HEAD
-            if self.repo.head.is_detached:
-                print("[WARNING] Repository is in detached HEAD state")
-                return False
-
-            # Ensure we're on main/master branch
-            current_branch = self.repo.active_branch.name
-            if current_branch not in ['main', 'master']:
-                print(
-                    f"[WARNING] Not on main branch (current: {current_branch})")
-                return False
-
-            return True
-        except Exception as e:
-            print(f"[ERROR] Failed to check build state: {e}")
-            return False
-
-    def create_contribution_branch(self, branch_name: str) -> bool:
-        """Create a new branch for contributions."""
-        try:
-            if not self.repo:
-                self.repo = git.Repo(self.local_repo_path)
-
-            # First ensure we're in a clean state
-            if not self.ensure_clean_build_state():
-                print("[ERROR] Cannot create branch: repository not in clean state")
-                return False
-
-            # Ensure we're up to date with upstream
-            if 'upstream' in self.repo.remotes:
-                self.repo.git.fetch('upstream')
-                self.repo.git.checkout('main')
-                self.repo.git.merge('upstream/main')
-
-            # Create and checkout new branch
-            new_branch = self.repo.create_head(branch_name)
-            new_branch.checkout()
-            print(f"[GIT] Created and switched to branch: {branch_name}")
-            return True
-        except Exception as e:
-            print(f"[ERROR] Failed to create contribution branch: {e}")
-            return False
-
-    def commit_changes(self, commit_message: str) -> bool:
-        """Commit changes to the current branch."""
-        try:
-            if not self.repo:
-                self.repo = git.Repo(self.local_repo_path)
-            self.repo.git.add(A=True)
-            self.repo.index.commit(commit_message)
-            print(f"[GIT] Committed changes: {commit_message}")
-            return True
-        except Exception as e:
-            print(f"[ERROR] Failed to commit changes: {e}")
-            return False
-
-    def push_changes(self) -> bool:
-        """Push changes to the remote repository."""
-        try:
-            if not self.repo:
-                self.repo = git.Repo(self.local_repo_path)
-            current_branch = self.repo.active_branch.name
-            self.repo.git.push('origin', current_branch)
-            print(f"[GIT] Pushed changes to branch: {current_branch}")
-            return True
-        except Exception as e:
-            print(f"[ERROR] Failed to push changes: {e}")
-            return False
-
     def setup_upstream(self, original_repo_url: str = None) -> bool:
         """Set up upstream remote for the original repository."""
         try:
@@ -295,53 +217,6 @@ class CodeFetcher:
         except Exception as e:
             print(f"[ERROR] Failed to set up upstream: {e}")
             return False
-
-    def get_pull_request_url(self) -> str:
-        """Generate the URL for creating a pull request."""
-        try:
-            if not self.repo:
-                self.repo = git.Repo(self.local_repo_path)
-            current_branch = self.repo.active_branch.name
-            origin_url = self.repo.remotes.origin.url
-            # Extract owner and repo from origin URL
-            match = re.search(r'github\.com/([^/]+)/([^/]+)\.git', origin_url)
-            if match:
-                owner, repo_name = match.groups()
-                return f"https://github.com/{owner}/{repo_name}/compare/main...{current_branch}"
-            return ""
-        except Exception as e:
-            print(f"[ERROR] Failed to generate pull request URL: {e}")
-            return ""
-
-    def sync_output_dir_to_repo(self):
-        """Copy updated .java files from output_dir (e.g., src/) back into the cloned Git repo."""
-        if not self.local_repo_path or not os.path.exists(self.local_repo_path):
-            raise ValueError("Local repo path is invalid.")
-
-        # First ensure we're in a clean state
-        if not self.ensure_clean_build_state():
-            print("[WARNING] Syncing changes while repository not in clean state")
-
-        # If output_dir is the same as local_repo_path, skip syncing
-        if self.output_dir == self.local_repo_path:
-            print(
-                "[INFO] Output directory is the same as repository directory, skipping sync")
-            return
-
-        files_synced = 0
-        for root, _, files in os.walk(self.output_dir):
-            for file in files:
-                if file.endswith(".java"):
-                    rel_path = os.path.relpath(
-                        os.path.join(root, file), self.output_dir)
-                    dest_path = os.path.join(self.local_repo_path, rel_path)
-
-                    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-                    shutil.copy2(os.path.join(root, file), dest_path)
-                    files_synced += 1
-
-        if files_synced > 0:
-            print(f"[INFO] Synced {files_synced} Java files to repository")
 
     def is_fork(self) -> bool:
         """Check if the current repository is a fork using GitHub API."""
