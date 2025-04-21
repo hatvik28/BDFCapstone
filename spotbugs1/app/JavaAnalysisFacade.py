@@ -15,7 +15,7 @@ from app.services.MetricAnalyzer import CKMetricsAnalyzer
 from app.services.MetricAnalyzer import SolutionMetricsAnalyzer
 from app.services.MetricAnalyzer import organize_ck_outputs
 from app.services.BuildSystemManager import BuildSystemManager
-from app.config import OUTPUT_DIR, GITHUB_TOKEN, BIN_DIR, SPOTBUGS_PATH, SPOTBUGS_REPORT_PATH, GOOGLE_FORMATTER_PATH, REPO_ROOT_DIR, PMD_PATH, PMD_RULESET_PATH, PMD_REPORT_PATH  # Added PMD paths
+from app.config import OUTPUT_DIR, GITHUB_TOKEN, BIN_DIR, SPOTBUGS_PATH, SPOTBUGS_REPORT_PATH, GOOGLE_FORMATTER_PATH, REPO_ROOT_DIR, PMD_PATH, PMD_RULESET_PATH, PMD_REPORT_PATH, LLM_API_KEY, CLAUDE_API_KEY  # Added PMD paths
 
 
 class JavaAnalysisFacade:
@@ -27,7 +27,8 @@ class JavaAnalysisFacade:
                  pmd_path: str = PMD_PATH,  # PMD re-enabled
                  pmd_ruleset_path: str = PMD_RULESET_PATH,
                  pmd_report_path: str = PMD_REPORT_PATH,
-                 llm_api_key: Optional[str] = None):
+                 llm_api_key: Optional[str] = None,
+                 claude_api_key: str = CLAUDE_API_KEY):
         """Initialize the facade with all necessary components."""
 
         self.output_dir = output_dir
@@ -42,7 +43,8 @@ class JavaAnalysisFacade:
             self.repo_name, output_dir, github_token)
         self.spotbugs_analyzer = BugAnalyzer(
             output_dir, bin_dir, spotbugs_path, REPO_ROOT_DIR)
-        self.llm_model = LLMModel(llm_api_key) if llm_api_key else None
+        self.llm_model = LLMModel(
+            llm_api_key, claude_api_key) if llm_api_key else None
         self.solution_applier = SolutionApplier(GOOGLE_FORMATTER_PATH)
         self.pmd_analyzer = PMDAnalyzer(  # PMD re-enabled
             pmd_path, pmd_ruleset_path, pmd_report_path)
@@ -61,6 +63,10 @@ class JavaAnalysisFacade:
         self._metrics_cache = {}
         self._last_analysis_time = {}
         self._cache_timeout = 300  # 5 minutes cache timeout
+
+        # Add build cache
+        self._built_projects = {}  # Dictionary to track {project_dir: timestamp}
+        self._compiled_files = {}  # Dictionary to track which class files exist
 
         # Add persistent cache for initial metrics
         self._initial_metrics_cache = {}
@@ -106,6 +112,9 @@ class JavaAnalysisFacade:
         self.github_fetcher.repo_name = repo_name
 
         # Clear and prepare directories
+        self.github_fetcher.check_locked_files(
+            "cloned_repo\\src\\main\\resources\\version.properties")
+
         self.github_fetcher.cleanup_directory(self.output_dir)
         self._clean_bin_directory()  # Clean bin directory before cloning new repo
 
@@ -525,7 +534,6 @@ class JavaAnalysisFacade:
             print(f"ERROR: Failed to load bug descriptions - {e}")
             return {}
 
-
     def _is_cache_valid(self, filename: str, tool: str = 'spotbugs') -> bool:
         """Check if the cached data for a file is still valid."""
         cache_key = f"{filename}_{tool}"
@@ -542,10 +550,34 @@ class JavaAnalysisFacade:
         self._last_analysis_time[cache_key] = time.time()
 
     def _get_cached_data(self, filename: str, tool: str = 'spotbugs') -> Tuple[List[Dict], Dict]:
-        """Get cached bugs and metrics data if available and valid."""
+        """Get cached bugs data if available and valid, but always get fresh metrics."""
         cache_key = f"{filename}_{tool}"
+
+        # Get cached bugs if valid
         if self._is_cache_valid(filename, tool):
-            return self._bugs_cache.get(cache_key, []), self._metrics_cache.get(cache_key, {})
+            cached_bugs = self._bugs_cache.get(cache_key, [])
+
+            # Always get fresh metrics for the file
+            base_filename = os.path.basename(filename)
+
+            # Get metrics - Check initial cache first
+            if base_filename in self._initial_metrics_cache:
+                print(
+                    f"[CACHE] Using initial metrics from cache for {base_filename}")
+                metrics = self._initial_metrics_cache[base_filename]
+            else:
+                print(
+                    f"[METRICS] Calculating initial metrics for {base_filename}")
+                metrics_list = self.ck_metrics.get_original_metrics(filename)
+                metrics = metrics_list[0] if metrics_list else {}
+                if metrics and "error" not in metrics:
+                    print(
+                        f"[CACHE] Storing initial metrics for {base_filename}")
+                    # Store in persistent cache
+                    self._initial_metrics_cache[base_filename] = metrics
+
+            return cached_bugs, metrics
+
         return None, None
 
     def clear_cache_for_file(self, filename: str):
@@ -571,3 +603,4 @@ class JavaAnalysisFacade:
 
         # We specifically DO NOT clear self._initial_metrics_cache here
         print(f"[INFO] Time-based cache cleared for file: {base_filename}")
+
