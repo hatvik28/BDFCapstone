@@ -3,6 +3,7 @@ import subprocess
 import re
 import glob
 import shutil
+import time
 from typing import Tuple, List, Optional
 
 
@@ -37,7 +38,7 @@ class BuildSystemManager:
             wrapper_path = os.path.join(project_dir, wrapper_name)
 
             if os.path.exists(wrapper_path):
-                cmd = [wrapper_name, 'clean', 'compile', '-DskipTests']
+                cmd = [wrapper_name, 'compile', '-DskipTests']
                 print(
                     f"Found Maven wrapper at {wrapper_path}, using it for compilation")
             else:
@@ -105,13 +106,13 @@ class BuildSystemManager:
                     env = os.environ.copy()
                     env['JAVA_HOME'] = java_home
                     # Use only common JVM arguments
-                    cmd = [wrapper_name, 'clean', 'compileJava', '-x', 'test',
+                    cmd = [wrapper_name, 'compileJava', '-x', 'test',
                            '-Dorg.gradle.java.home=' + java_home,
                            '-Dorg.gradle.jvmargs=-Xmx2048m']
                 else:
                     print(
                         "No compatible Java version found. Attempting to use system default Java")
-                    cmd = [wrapper_name, 'clean', 'compileJava', '-x', 'test']
+                    cmd = [wrapper_name, 'compileJava', '-x', 'test']
             else:
                 print(
                     "Gradle wrapper not found. Trying to use system's Gradle installation")
@@ -256,26 +257,27 @@ class BuildSystemManager:
             return None
 
     def _copy_compiled_classes(self, source_dir: str):
-        """Copy compiled classes to our bin directory."""
+        """Copy compiled classes to our bin directory without clearing existing ones."""
         try:
-            # Clear existing classes
-            for file in os.listdir(self.bin_dir):
-                if file.endswith('.class'):
-                    os.remove(os.path.join(self.bin_dir, file))
-
-            # Copy new classes
+            # Copy only new or updated classes instead of clearing all first
+            files_copied = 0
+            
             for root, _, files in os.walk(source_dir):
                 for file in files:
                     if file.endswith('.class'):
                         src_path = os.path.join(root, file)
                         rel_path = os.path.relpath(src_path, source_dir)
                         dst_path = os.path.join(self.bin_dir, rel_path)
-                        os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-                        shutil.copy2(src_path, dst_path)
-
-            print(
-                f"Successfully copied all compiled class files to {self.bin_dir}")
-
+                        
+                        # Only copy if file doesn't exist or is newer
+                        if not os.path.exists(dst_path) or \
+                        os.path.getmtime(src_path) > os.path.getmtime(dst_path):
+                            os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+                            shutil.copy2(src_path, dst_path)
+                            files_copied += 1
+            
+            print(f"Copied {files_copied} new/updated class files to {self.bin_dir}")
+            
         except Exception as e:
             print(f"Error while copying compiled classes: {str(e)}")
 
@@ -349,6 +351,7 @@ class BuildSystemManager:
         """Compile Java files with proper classpath handling and dependency resolution."""
         try:
             print(f"Starting compilation process for {file_path}")
+            file_path = os.path.abspath(file_path)
 
             # Check if the file exists
             if not os.path.exists(file_path):
@@ -356,44 +359,68 @@ class BuildSystemManager:
                     f"Cannot compile - source file does not exist: {file_path}")
                 return False
 
-            # Use REPO_ROOT_DIR for build tool detection
-            print(f"Checking repository root directory: {self.repo_root_dir}")
-
-            # Search for build files in root and subdirectories
+            # Find project directory and build tool
             project_dir, build_tool = self._find_build_files(
                 self.repo_root_dir)
-
             if not project_dir:
-                print("No build tool found in repository root or subdirectories")
-                # Fallback to searching up from file directory
                 project_dir = self._find_project_root(file_path)
                 if project_dir:
                     build_tool = self._detect_build_tool(project_dir)
-
-            if not project_dir:
-                print("Could not locate a project root with build configuration")
-                # Fallback to file's directory
-                project_dir = os.path.dirname(file_path)
-                build_tool = 'none'
+                else:
+                    project_dir = os.path.dirname(file_path)
+                    build_tool = 'none'
 
             print(f"Build tool detected: {build_tool}")
             print(f"Project root directory: {project_dir}")
 
-            if build_tool == 'maven':
-                if not self._compile_maven_project(project_dir):
-                    return False
-            elif build_tool == 'gradle':
-                try:
-                    if not self._compile_gradle_project(project_dir):
-                        return False
-                except RuntimeError as e:
-                    raise e
+            # Check for base class name
+            base_class_name = os.path.basename(
+                file_path).replace('.java', '.class')
+            class_path = os.path.join(self.bin_dir, base_class_name)
+
+            # Check if we need to compile
+            needs_compile = False
+
+            # If we have a record of this project being compiled already
+            if hasattr(self, '_built_projects') and project_dir in self._built_projects:
+                last_build_time = self._built_projects[project_dir]
+                file_mod_time = os.path.getmtime(file_path)
+
+                if file_mod_time > last_build_time:
+                    print(f"File modified since last build: {file_path}")
+                    needs_compile = True
+                elif not os.path.exists(class_path):
+                    print(f"Class file doesn't exist yet: {class_path}")
+                    needs_compile = True
+                else:
+                    print(f"Using existing compiled classes from previous build")
+                    return True
             else:
-                print("No build tool detected, falling back to direct javac compilation")
-                if not self._compile_with_javac(file_path, bin_dir):
+                # First time compiling this project
+                if not hasattr(self, '_built_projects'):
+                    self._built_projects = {}
+                needs_compile = True
+
+            if needs_compile:
+                # Compile based on build tool
+                success = False
+                if build_tool == 'maven':
+                    success = self._compile_maven_project(project_dir)
+                elif build_tool == 'gradle':
+                    try:
+                        success = self._compile_gradle_project(project_dir)
+                    except RuntimeError as e:
+                        raise e
+                else:
+                    success = self._compile_with_javac(file_path, bin_dir)
+
+                if not success:
                     return False
 
-            # Check for compiled classes using self.bin_dir consistently
+                # Update build cache timestamp
+                self._built_projects[project_dir] = time.time()
+
+            # Verify classes exist
             compiled_classes = []
             for root, _, files in os.walk(self.bin_dir):
                 for file in files:
@@ -402,12 +429,13 @@ class BuildSystemManager:
 
             if not compiled_classes:
                 print(
-                    f"Compilation failed - no class files were found in {self.bin_dir}")
+                    f"Compilation failed - no class files found in {self.bin_dir}")
                 return False
 
             print(
                 f"Compilation successful. Found {len(compiled_classes)} class files")
             return True
+
         except Exception as e:
             print(f"Error during compilation: {str(e)}")
             return False
