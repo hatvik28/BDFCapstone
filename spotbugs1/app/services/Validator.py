@@ -1,9 +1,9 @@
 import os
 import glob
 import subprocess
-from app.services.BugAnalyzer import BugAnalyzer
-from app.services.PMDAnalyzer import PMDAnalyzer
-from app.services.BuildSystemManager import BuildSystemManager
+from spotbugs1.app.services.BugAnalyzer import BugAnalyzer
+from spotbugs1.app.services.PMDAnalyzer import PMDAnalyzer
+from spotbugs1.app.services.BuildSystemManager import BuildSystemManager
 
 
 class Validator:
