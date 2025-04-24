@@ -4,7 +4,7 @@ import csv
 import shutil
 import glob
 import re
-from app.config import BASE_DIR
+from spotbugs1.app.config import BASE_DIR
 
 
 class MetricsCache:
