@@ -2,7 +2,7 @@
 SpotBugs1 - A Java Bug Analysis Tool
 """
 
-from app.routes import register_routes
+from spotbugs1.app.routes import register_routes
 from flask import Flask
 __version__ = "0.1.0"
 
