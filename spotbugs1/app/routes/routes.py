@@ -1,9 +1,8 @@
 from flask import Blueprint, request, jsonify, render_template
-from app.JavaAnalysisFacade import JavaAnalysisFacade
-from app.config import GITHUB_TOKEN, LLM_API_KEY
+from spotbugs1.app.JavaAnalysisFacade import JavaAnalysisFacade
+from spotbugs1.app.config import GITHUB_TOKEN, LLM_API_KEY
 import git
 import os
-
 # Create blueprint
 api_bp = Blueprint('api', __name__)
 
