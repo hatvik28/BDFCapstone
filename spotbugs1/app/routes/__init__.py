@@ -1,6 +1,6 @@
 from flask import Blueprint
 
-from .routes import api_bp
+from spotbugs1.app.routes.routes import api_bp
 
 
 # List of Blueprints
@@ -11,4 +11,3 @@ def register_routes(app):
     """Register all blueprints (route handlers) with the Flask app."""
     for bp in blueprints:
         app.register_blueprint(bp)
-
