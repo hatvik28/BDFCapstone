@@ -5,17 +5,17 @@ import re
 import shutil
 import time
 from typing import Dict, List, Tuple, Optional
-from app.services.CodeFetcher import CodeFetcher
-from app.services.BugAnalyzer import BugAnalyzer
-from app.services.LLMModel import LLMModel
-from app.services.SolutionApplier import SolutionApplier
-from app.services.Validator import Validator
-from app.services.PMDAnalyzer import PMDAnalyzer  # PMD re-enabled
-from app.services.MetricAnalyzer import CKMetricsAnalyzer
-from app.services.MetricAnalyzer import SolutionMetricsAnalyzer
-from app.services.MetricAnalyzer import organize_ck_outputs
-from app.services.BuildSystemManager import BuildSystemManager
-from app.config import OUTPUT_DIR, GITHUB_TOKEN, BIN_DIR, SPOTBUGS_PATH, SPOTBUGS_REPORT_PATH, GOOGLE_FORMATTER_PATH, REPO_ROOT_DIR, PMD_PATH, PMD_RULESET_PATH, PMD_REPORT_PATH, LLM_API_KEY, CLAUDE_API_KEY  # Added PMD paths
+from spotbugs1.app.services.CodeFetcher import CodeFetcher
+from spotbugs1.app.services.BugAnalyzer import BugAnalyzer
+from spotbugs1.app.services.LLMModel import LLMModel
+from spotbugs1.app.services.SolutionApplier import SolutionApplier
+from spotbugs1.app.services.Validator import Validator
+from spotbugs1.app.services.PMDAnalyzer import PMDAnalyzer  # PMD re-enabled
+from spotbugs1.app.services.MetricAnalyzer import CKMetricsAnalyzer
+from spotbugs1.app.services.MetricAnalyzer import SolutionMetricsAnalyzer
+from spotbugs1.app.services.MetricAnalyzer import organize_ck_outputs
+from spotbugs1.app.services.BuildSystemManager import BuildSystemManager
+from spotbugs1.app.config import OUTPUT_DIR, GITHUB_TOKEN, BIN_DIR, SPOTBUGS_PATH, SPOTBUGS_REPORT_PATH, GOOGLE_FORMATTER_PATH, REPO_ROOT_DIR, PMD_PATH, PMD_RULESET_PATH, PMD_REPORT_PATH, LLM_API_KEY, CLAUDE_API_KEY  # Added PMD paths
 
 
 class JavaAnalysisFacade:
