@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from app.services.LLMModel import LLMModel
+from spotbugs1.app.services.LLMModel import LLMModel
 
 
 class TestUpdateSolution(unittest.TestCase):
