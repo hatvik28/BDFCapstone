@@ -7,6 +7,7 @@ load_dotenv()
 # Get sensitive credentials from environment variables
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 LLM_API_KEY = os.getenv("LLM_API_KEY")
+CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
 
 # Configuration variables
 SPOTBUGS_REPORT_PATH = "spotbugs_report.xml"
