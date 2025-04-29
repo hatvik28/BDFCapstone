@@ -44,7 +44,7 @@ class JavaAnalysisFacade:
         self.spotbugs_analyzer = BugAnalyzer(
             output_dir, bin_dir, spotbugs_path, REPO_ROOT_DIR)
         self.llm_model = LLMModel(
-            llm_api_key, claude_api_key) if llm_api_key else None
+            llm_api_key) if llm_api_key else None
         self.solution_applier = SolutionApplier(GOOGLE_FORMATTER_PATH)
         self.pmd_analyzer = PMDAnalyzer(  # PMD re-enabled
             pmd_path, pmd_ruleset_path, pmd_report_path)
@@ -110,10 +110,6 @@ class JavaAnalysisFacade:
 
         # Update fetcher with new repo name
         self.github_fetcher.repo_name = repo_name
-
-        # Clear and prepare directories
-        self.github_fetcher.check_locked_files(
-            "cloned_repo\\src\\main\\resources\\version.properties")
 
         self.github_fetcher.cleanup_directory(self.output_dir)
         self._clean_bin_directory()  # Clean bin directory before cloning new repo
