@@ -41,7 +41,7 @@ class CodeFetcher:
             remaining = int(response.headers.get('X-RateLimit-Remaining', 0))
             if remaining < 10:
                 print(
-                    f"[WARNING] Low GitHub API rate limit remaining: {remaining}")
+                    f" Low GitHub API rate limit remaining: {remaining}")
 
             return token
         except requests.exceptions.RequestException as e:
@@ -58,7 +58,7 @@ class CodeFetcher:
                         shutil.rmtree(git_dir, ignore_errors=True)
                     except Exception as e:
                         print(
-                            f"[WARNING] Failed to remove .git directory: {e}")
+                            f" Failed to remove .git directory: {e}")
                         # Continue with other files even if .git removal fails
 
                 # Add a small delay to allow file handles to be released
@@ -82,17 +82,17 @@ class CodeFetcher:
                             os.rmdir(dir_path)
                         except Exception as e:
                             print(
-                                f"[WARNING] Failed to remove directory {name}: {e}")
+                                f" Failed to remove directory {name}: {e}")
 
                 # Try to remove the root directory
                 try:
                     os.rmdir(directory)
                 except Exception as e:
-                    print(f"[WARNING] Failed to remove root directory: {e}")
+                    print(f" Failed to remove root directory: {e}")
 
             except Exception as e:
                 print(
-                    f"[ERROR] Failed to clean {directory} Please try again: {e}")
+                    f" Failed to clean {directory} Please try again: {e}")
                 # Don't raise the exception, just log it
 
     def clone_repo(self):
@@ -105,30 +105,30 @@ class CodeFetcher:
 
         # Forcefully remove the existing cloned_repo directory
         if os.path.exists(clone_dir):
-            print("[CLEANUP] Removing existing cloned_repo...")
+            print(" Removing existing cloned_repo...")
             try:
                 shutil.rmtree(clone_dir, onerror=force_remove_readonly)
             except Exception as e:
-                print(f"[ERROR] Failed to clean cloned_repo: {e}")
+                print(f" Failed to clean cloned_repo: {e}")
                 raise RuntimeError(
                     "Failed to clear previous cloned repo folder.")
 
         # Check if this is a fork or user's own repo
         is_forked = self.is_fork()
         if is_forked:
-            print("[INFO] Working with a forked repository")
+            print(" Working with a forked repository")
         else:
-            print("[INFO] Working with your own repository")
+            print(" Working with your own repository")
 
         # Use HTTPS with token in URL for authentication
         clone_url = f"https://{self.token}:x-oauth-basic@github.com/{self.repo_name}.git"
-        print(f"[GIT] Cloning from: {clone_url}")
+        print(f" Cloning from: {clone_url}")
 
         try:
             self.repo = git.Repo.clone_from(clone_url, clone_dir)
             self.local_repo_path = clone_dir
 
-            print(f"[GIT] Repo cloned to: {self.local_repo_path}")
+            print(f" Repo cloned to: {self.local_repo_path}")
             return self.repo
         except git.exc.GitCommandError as e:
             raise RuntimeError(f"Failed to clone repository: {e}")
@@ -145,7 +145,6 @@ class CodeFetcher:
 
         # Walk through the cloned repo
         for root, _, files in os.walk(self.local_repo_path):
-            print(f"[INFO] Searching in: {root}")
             for file in files:
                 if file.endswith(".java"):
                     full_path = os.path.join(root, file)
@@ -162,9 +161,8 @@ class CodeFetcher:
                                 "content": content
                             })
                     except Exception as e:
-                        print(f"[ERROR] Could not process {file}: {e}")
+                        print(f" Could not process {file}: {e}")
 
-        print(f"[INFO] Found {len(java_files)} Java files in repository")
         return java_files
 
     @staticmethod
@@ -193,7 +191,7 @@ class CodeFetcher:
             repo_name = f"{match.group(1)}/{match.group(2)}"
             return repo_name, None
 
-        print("[ERROR] Invalid GitHub URL format")
+        print(" Invalid GitHub URL format")
         return None, None
 
     def setup_upstream(self, original_repo_url: str = None) -> bool:
@@ -207,15 +205,15 @@ class CodeFetcher:
                 original_repo_url = self.parent_repo_url
 
             if not original_repo_url:
-                print("[ERROR] No original repository URL provided")
+                print(" No original repository URL provided")
                 return False
 
             if 'upstream' not in self.repo.remotes:
                 self.repo.create_remote('upstream', original_repo_url)
-                print(f"[GIT] Added upstream remote: {original_repo_url}")
+                print(f" Added upstream remote: {original_repo_url}")
             return True
         except Exception as e:
-            print(f"[ERROR] Failed to set up upstream: {e}")
+            print(f" Failed to set up upstream: {e}")
             return False
 
     def is_fork(self) -> bool:
@@ -236,20 +234,21 @@ class CodeFetcher:
                 repo_data = response.json()
                 is_fork = repo_data.get('fork', False)
                 if is_fork:
-                    print(f"[INFO] Repository {self.repo_name} is a fork")
+                    print(f" Repository {self.repo_name} is a fork")
                     # Store the parent repository URL for later use
                     parent_url = repo_data.get('parent', {}).get('clone_url')
                     if parent_url:
-                        print(f"[INFO] Parent repository: {parent_url}")
+                        print(f" Parent repository: {parent_url}")
                         self.parent_repo_url = parent_url
                 else:
-                    print(f"[INFO] Repository {self.repo_name} is not a fork")
+                    print(f" Repository {self.repo_name} is not a fork")
                 return is_fork
             else:
                 print(
-                    f"[ERROR] Failed to check repository status: {response.status_code}")
+                    f" Failed to check repository status: {response.status_code}")
                 return False
 
         except Exception as e:
-            print(f"[ERROR] Failed to check if repository is a fork: {e}")
+            print(f" Failed to check if repository is a fork: {e}")
             return False
+
