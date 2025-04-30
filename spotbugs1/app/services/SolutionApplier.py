@@ -12,7 +12,6 @@ class SolutionApplier:
 
     def find_and_replace_buggy_code(self, content, buggy_snippet, fixed_snippet):
         try:
-            # Use ChatGPT to perform the code replacement
             prompt = f"""
             You are a Java code editor. Replace the buggy code snippet with the fixed version in the following Java code.
             If the exact buggy code snippet is not found, use the context provided and identify the code block near the original line 
@@ -47,17 +46,16 @@ class SolutionApplier:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.1,  # Low temperature for consistent results
-                max_tokens=4000  # Increased to handle larger files
+                max_tokens=4000 
             )
 
             corrected_code = response['choices'][0]['message']['content'].strip(
             )
 
-            # Clean up any markdown formatting
+
             corrected_code = re.sub(
                 r"```[a-zA-Z]*\n?", "", corrected_code).strip()
 
-            # Verify the code has proper closing braces
             if corrected_code.count('{') != corrected_code.count('}'):
                 return content  # Return original if braces don't match
 
@@ -89,10 +87,9 @@ class SolutionApplier:
                 raise FileNotFoundError(
                     f"Target file not found at {file_path}")
 
-            # Clean the solution (remove markdown formatting)
             cleaned_solution = re.sub(r"```[a-zA-Z]*\n?", "", solution).strip()
 
-            # Apply the fix using ChatGPT
+
             fixed_code = self.find_and_replace_buggy_code(
                 current_code,
                 code_snippet,
@@ -119,23 +116,10 @@ class SolutionApplier:
             raise
 
     def apply_solution_to_temp_dir(self, original_code, code_snippet, solution, filename, solution_number):
-        """
-        Apply a solution to a temporary directory for metrics analysis.
 
-        Args:
-            original_code: The original code content
-            code_snippet: The buggy code snippet to replace
-            solution: The fixed solution code to apply
-            filename: The target filename
-            solution_number: The solution number
-
-        Returns:
-            Path to the temporary directory containing the fixed file
-        """
-        # Clean the solution (remove markdown formatting)
         cleaned_solution = re.sub(r"```[a-zA-Z]*\n?", "", solution).strip()
 
-        # Apply the fix using ChatGPT
+
         try:
             fixed_code = self.find_and_replace_buggy_code(
                 original_code, code_snippet, cleaned_solution)
@@ -162,7 +146,7 @@ class SolutionApplier:
             except Exception:
                 pass
 
-            return solution_dir  # This will be passed to CKMetricsAnalyzer
+            return solution_dir  
 
         except Exception as e:
             import traceback
