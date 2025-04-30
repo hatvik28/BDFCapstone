@@ -75,7 +75,7 @@ class JavaAnalysisFacade:
         """Clean the bin directory by removing all .class files and subdirectories."""
         try:
             if os.path.exists(self.bin_dir):
-                print(f"[CLEANUP] Cleaning bin directory: {self.bin_dir}")
+                print(f"Cleaning bin directory: {self.bin_dir}")
                 # Remove all files and subdirectories in the bin directory
                 for root, dirs, files in os.walk(self.bin_dir, topdown=False):
                     # First remove all files
@@ -85,7 +85,7 @@ class JavaAnalysisFacade:
                             os.remove(file_path)
                         except Exception as e:
                             print(
-                                f"[WARNING] Failed to remove file {file_path}: {e}")
+                                f"Failed to remove file {file_path}: {e}")
 
                     # Then remove all directories (except the root bin directory)
                     for dir in dirs:
@@ -94,9 +94,9 @@ class JavaAnalysisFacade:
                             os.rmdir(dir_path)
                         except Exception as e:
                             print(
-                                f"[WARNING] Failed to remove directory {dir_path}: {e}")
+                                f"  Failed to remove directory {dir_path}: {e}")
         except Exception as e:
-            print(f"[ERROR] Failed to clean bin directory: {e}")
+            print(f" Failed to clean bin directory: {e}")
 
     def analyze_github_repository(self, github_url: str) -> List[Dict]:
         """Fetch Java files from a GitHub repository."""
@@ -119,13 +119,13 @@ class JavaAnalysisFacade:
 
         # Check if it's a fork and set up upstream if needed
         if self.github_fetcher.is_fork():
-            print("[INFO] Setting up upstream remote for forked repository")
+            print(" Setting up upstream remote for forked repository")
             if not self.github_fetcher.setup_upstream():
-                print("[WARNING] Failed to set up upstream remote")
+                print("  Failed to set up upstream remote")
 
         # Clear the initial metrics cache when analyzing a new repo
         self._initial_metrics_cache.clear()
-        print("[CACHE] Cleared initial metrics cache for new repository analysis.")
+        print(" Cleared initial metrics cache for new repository analysis.")
 
         # Fetch files
         return self.github_fetcher.fetch_java_files_from_local_clone()
@@ -153,15 +153,15 @@ class JavaAnalysisFacade:
                 # Only recompile if class file doesn't exist
                 if not os.path.exists(class_file):
                     print(
-                        f"[INFO] Class file not found, compiling {file_path}")
+                        f" Class file not found, compiling {file_path}")
                     try:
                         if not self.build_system_manager.compile_java_files(file_path, self.bin_dir):
                             error_msg = "Compilation failed. Cannot proceed with SpotBugs analysis."
-                            print(f"[ERROR] {error_msg}")
+                            print(f" {error_msg}")
                             return content, [], 0, []
                     except RuntimeError as e:
                         error_msg = str(e)
-                        print(f"[ERROR] {error_msg}")
+                        print(f" {error_msg}")
                         return content, [], 0, []
 
             # Check cache after compilation
@@ -171,12 +171,12 @@ class JavaAnalysisFacade:
 
             # Handle different analysis tools
             if tool.lower() == 'pmd':
-                print(f"[INFO] Running PMD analysis on {file_path}")
+                print(f" Running PMD analysis on {file_path}")
                 self.pmd_analyzer.run_pmd_analysis(
                     source_file=file_path, report_path=report_path)
                 bugs = self._get_file_bugs_pmd(filename, report_path)
             else:  # SpotBugs
-                print("[INFO] Running SpotBugs analysis")
+                print(" Running SpotBugs analysis")
                 self.spotbugs_analyzer.run_spotbugs_analysis(report_path)
                 bugs = self._get_file_bugs(filename, report_path)
 
@@ -186,22 +186,22 @@ class JavaAnalysisFacade:
             base_filename = os.path.basename(filename)
             if base_filename in self._initial_metrics_cache:
                 print(
-                    f"[CACHE] Using initial metrics from cache for {base_filename}")
+                    f" Using initial metrics from cache for {base_filename}")
                 metrics = self._initial_metrics_cache[base_filename]
             else:
                 print(
-                    f"[METRICS] Calculating initial metrics for {base_filename}")
+                    f" Calculating initial metrics for {base_filename}")
                 metrics_list = self.ck_metrics.get_original_metrics(
                     filename)  # filename has path needed by CK
                 metrics = metrics_list[0] if metrics_list else {}
                 if metrics and "error" not in metrics:
                     print(
-                        f"[CACHE] Storing initial metrics for {base_filename}")
+                        f" Storing initial metrics for {base_filename}")
                     # Store in persistent cache
                     self._initial_metrics_cache[base_filename] = metrics
                 else:
                     print(
-                        f"[WARNING] Failed to calculate or invalid initial metrics for {base_filename}")
+                        f"  Failed to calculate or invalid initial metrics for {base_filename}")
                     # Ensure error state if calculation fails
                     metrics = {"error": "Failed to calculate initial metrics"}
 
@@ -217,7 +217,7 @@ class JavaAnalysisFacade:
 
         except Exception as e:
             error_msg = f"Unexpected error during analysis: {str(e)}"
-            print(f"[ERROR] {error_msg}")
+            print(f" {error_msg}")
             return "", [], 0, []
 
     def generate_bug_solutions(self, bug_info: Dict, filename: str) -> List[Dict]:
@@ -233,7 +233,7 @@ class JavaAnalysisFacade:
         bug = bug_info.get("bug", {})
         code_snippet = bug.get("code_snippet")
 
-        print(f"[INFO] Generating solutions for bug in {filename}")
+        print(f" Generating solutions for bug in {filename}")
 
         # Generate LLM fixes
         raw_response = self.llm_model.generate_solution(
@@ -265,11 +265,11 @@ class JavaAnalysisFacade:
                 sol["solution_number"] = i + 1
 
             except Exception as e:
-                print(f"[ERROR] Failed to apply solution to temp dir: {e}")
+                print(f" Failed to apply solution to temp dir: {e}")
                 sol["solution_dir"] = None
                 sol["error"] = str(e)
 
-        print(f"[INFO] Generated {len(solutions)} solutions for {filename}")
+        print(f" Generated {len(solutions)} solutions for {filename}")
         return solutions
 
     def apply_solution(self, file_path: str, code_snippet: str, solution: str, solution_number: int = 1) -> Tuple[str, str, Dict]:
@@ -278,17 +278,7 @@ class JavaAnalysisFacade:
             # Get the filename
             filename = os.path.basename(file_path)
 
-            # Clear ALL caches for this file before applying the solution
-            print(f"[DEBUG] Clearing caches for file: {filename}")
             self.clear_cache_for_file(filename)
-
-            # Print debug info about what we're applying
-            print(
-                f"[DEBUG] Applying solution {solution_number} to {file_path}")
-            print(
-                f"[DEBUG] Code snippet to replace (first 100 chars): {code_snippet[:100]}...")
-            print(
-                f"[DEBUG] Solution to apply (first 100 chars): {solution[:100]}...")
 
             # Apply the solution
             formatted_code, message = self.solution_applier.apply_solution(
@@ -304,14 +294,12 @@ class JavaAnalysisFacade:
                 initial_metrics = self._initial_metrics_cache.get(filename, {})
                 if not initial_metrics:
                     print(
-                        f"[WARNING] Initial metrics not found in cache for {filename}. Comparison might be inaccurate.")
+                        f"  Initial metrics not found in cache for {filename}. Comparison might be inaccurate.")
                     # As a fallback, calculate current metrics before apply (less ideal)
                     metrics_list = self.ck_metrics.get_original_metrics(
                         filename)
                     initial_metrics = metrics_list[0] if metrics_list else {}
 
-                print(
-                    f"[DEBUG] Using Initial metrics for comparison: LOC={initial_metrics.get('loc', 'N/A')}")
 
                 # Get metrics for the applied solution ("After" state)
                 solution_metrics_list = self.solution_metrics.calculate_metrics_for_applied_solution(
@@ -319,8 +307,6 @@ class JavaAnalysisFacade:
                 )
                 solution_metrics = solution_metrics_list[0] if solution_metrics_list else {
                 }
-                print(
-                    f"[DEBUG] Solution {solution_number} metrics ('After'): LOC={solution_metrics.get('loc', 'N/A')}")
 
                 # Calculate improvements comparing INITIAL vs APPLIED
                 ck_improvements = {}
@@ -343,7 +329,7 @@ class JavaAnalysisFacade:
 
             except Exception as e:
                 print(
-                    f"[ERROR] Failed to calculate metrics for applied solution: {e}")
+                    f" Failed to calculate metrics for applied solution: {e}")
                 metrics_data = {
                     "error": str(e),
                     "original_metrics": {},
@@ -354,7 +340,7 @@ class JavaAnalysisFacade:
             return formatted_code, message, metrics_data
 
         except Exception as e:
-            print(f"[ERROR] Failed to apply solution: {str(e)}")
+            print(f" Failed to apply solution: {str(e)}")
             return "", f"Error applying solution: {str(e)}", {"error": str(e)}
 
     def validate_bug(self, filename: str, bug_line: str, bug_type: str, original_code: str = None, patched_code: str = None, tool: str = 'spotbugs') -> dict:
@@ -401,7 +387,7 @@ class JavaAnalysisFacade:
             }
 
         except Exception as e:
-            print(f"[ERROR] Validation failed: {str(e)}")
+            print(f" Validation failed: {str(e)}")
             return {
                 'success': False,
                 'bug_fixed': False,
@@ -559,16 +545,16 @@ class JavaAnalysisFacade:
             # Get metrics - Check initial cache first
             if base_filename in self._initial_metrics_cache:
                 print(
-                    f"[CACHE] Using initial metrics from cache for {base_filename}")
+                    f" Using initial metrics from cache for {base_filename}")
                 metrics = self._initial_metrics_cache[base_filename]
             else:
                 print(
-                    f"[METRICS] Calculating initial metrics for {base_filename}")
+                    f" Calculating initial metrics for {base_filename}")
                 metrics_list = self.ck_metrics.get_original_metrics(filename)
                 metrics = metrics_list[0] if metrics_list else {}
                 if metrics and "error" not in metrics:
                     print(
-                        f"[CACHE] Storing initial metrics for {base_filename}")
+                        f" Storing initial metrics for {base_filename}")
                     # Store in persistent cache
                     self._initial_metrics_cache[base_filename] = metrics
 
@@ -578,7 +564,7 @@ class JavaAnalysisFacade:
 
     def clear_cache_for_file(self, filename: str):
         """Clear time-based cached data for a specific file, leaving initial metrics intact."""
-        print(f"[INFO] Clearing time-based cache for file: {filename}")
+        print(f" Clearing time-based cache for file: {filename}")
         # Use base filename for consistency
         base_filename = os.path.basename(filename)
 
@@ -588,15 +574,14 @@ class JavaAnalysisFacade:
             cache_key = f"{base_filename}_{tool}"
             if cache_key in self._bugs_cache:
                 del self._bugs_cache[cache_key]
-                print(f"[CACHE] Removed bugs cache for {cache_key}")
+                print(f" Removed bugs cache for {cache_key}")
             if cache_key in self._metrics_cache:  # Clear time-based metrics cache
                 del self._metrics_cache[cache_key]
                 print(
-                    f"[CACHE] Removed time-based metrics cache for {cache_key}")
+                    f" Removed time-based metrics cache for {cache_key}")
             if cache_key in self._last_analysis_time:
                 del self._last_analysis_time[cache_key]
-                print(f"[CACHE] Removed last analysis time for {cache_key}")
+                print(f" Removed last analysis time for {cache_key}")
 
-        # We specifically DO NOT clear self._initial_metrics_cache here
-        print(f"[INFO] Time-based cache cleared for file: {base_filename}")
+ 
 
