@@ -9,8 +9,7 @@ from spotbugs1.app.services.BuildSystemManager import BuildSystemManager
 class Validator:
     """
     Validates a bug fix by performing bug analysis:
-    1. Bug-specific validation - checks if the specific bug was fixed
-    2. Other bugs validation - checks for other remaining bugs
+    1. Bug-specific validation - checks if the specific bug was fixed for PMD or Spotbugs
     """
 
     def __init__(self, output_dir, bin_dir, spotbugs_path, bug_analyzer: BugAnalyzer, pmd_analyzer: PMDAnalyzer = None, build_system_manager: BuildSystemManager = None):
