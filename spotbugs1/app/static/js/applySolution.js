@@ -155,30 +155,30 @@ document.addEventListener("click", function (event) {
         // otherwise look for the original snippet in the fixedCodePreview
         let codeToReplace = "";
         if (solutionBox.querySelector(".buggy-code")) {
-            // If this is the first application, use the original buggy code
+
             codeToReplace = solutionBox.querySelector(".buggy-code").innerText.trim();
         } else {
-            // After feedback, check if we have a special data attribute that holds the current solution in the repo
+  
             const currentRepoCode = solutionBox.getAttribute("data-current-repo-code");
             if (currentRepoCode) {
-                console.log("[DEBUG] Using tracked repo code as the code to replace");
+
                 codeToReplace = currentRepoCode;
             }
-            // If no tracked repo code, try to get from fixedCodePreview
+ 
             else {
                 const fixedCodePreview = document.getElementById("fixedCodePreview");
                 if (fixedCodePreview && fixedCodePreview.textContent.trim()) {
-                    console.log("[DEBUG] Using current code from fixedCodePreview");
+
                     codeToReplace = fixedCodePreview.textContent.trim();
                 } else {
                     // As a last resort, use previous solution
                     const previousSolution = solutionBox.getAttribute("data-previous-solution");
                     if (previousSolution) {
-                        console.log("[DEBUG] Using previous solution as code to replace");
+
                         codeToReplace = previousSolution;
                     } else {
                         // Complete fallback
-                        console.log("[DEBUG] Complete fallback: Using current solution as the code to replace");
+
                         codeToReplace = currentSolution;
                     }
                 }
@@ -188,8 +188,6 @@ document.addEventListener("click", function (event) {
         // Store the current solution as the previous solution for future reference
         solutionBox.setAttribute("data-previous-solution", currentSolution);
 
-        console.log("[DEBUG] Code to replace length:", codeToReplace.length);
-        console.log("[DEBUG] Current solution length:", currentSolution.length);
         
         const solutionNumber = parseInt(event.target.getAttribute("data-solution-number")) || 1;
 
