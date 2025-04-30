@@ -66,15 +66,15 @@ document.addEventListener('click', async function(event) {
 
             // Automatically remove the message after 5 seconds
             setTimeout(() => {
-                // Use Bootstrap's fade-out effect if available, otherwise just remove
+    
                 if (messageDiv.classList.contains('fade')) {
                     messageDiv.classList.remove('show');
-                    // Wait for fade transition to complete before removing
+  
                     messageDiv.addEventListener('transitionend', () => messageDiv.remove(), { once: true });
                 } else {
                     messageDiv.remove();
                 }
-            }, 5000); // 5000 milliseconds = 5 seconds
+            }, 5000); 
 
             // Update bug count and UI only if the specific bug was fixed
             if (data.bug_fixed) {
