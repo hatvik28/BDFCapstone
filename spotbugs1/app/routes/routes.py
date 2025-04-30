@@ -10,12 +10,9 @@ api_bp = Blueprint('api', __name__)
 facade = JavaAnalysisFacade(github_token=GITHUB_TOKEN, llm_api_key=LLM_API_KEY)
 
 
-
-
 @api_bp.route('/')
 def index():
     return render_template('index.html')
-
 
 
 @api_bp.route("/analyze", methods=["POST"])
@@ -148,8 +145,6 @@ def update_solution():
         with open(temp_file_path, 'r', encoding='utf-8') as f:
             integrated_solution = f.read()
 
-        # Extract the relevant snippet using GPT
-        # Default to the updated solution
         display_snippet = updated_solution['snippet']
 
         # Only clear this specific solution's metrics from cache
@@ -284,13 +279,13 @@ def validate_patch():
         )
 
         is_bug_fixed = validation_results.get('bug_fixed', False)
-        # 422 Unprocessable Entity when bug still exists
+
         status_code = 200 if is_bug_fixed else 422
 
         return jsonify({
             "bug_fixed": is_bug_fixed,
             "message": "Target bug was successfully fixed" if is_bug_fixed else "Target bug still exists",
-            # Keep this for frontend reference but don't show in message
+
             "other_bugs": validation_results.get('other_bugs', [])
         }), status_code
 
