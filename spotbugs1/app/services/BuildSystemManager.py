@@ -16,7 +16,6 @@ class BuildSystemManager:
         self.spotbugs_path = os.path.abspath(spotbugs_path)
         self.repo_root_dir = os.path.abspath(repo_root_dir)
 
-    """Handles build system detection and operations."""
 
     def _detect_build_tool(self, project_dir: str) -> str:
         """Detect if the project uses Maven or Gradle."""
@@ -39,14 +38,10 @@ class BuildSystemManager:
 
             if os.path.exists(wrapper_path):
                 cmd = [wrapper_name, 'compile', '-DskipTests']
-                print(
-                    f"Found Maven wrapper at {wrapper_path}, using it for compilation")
             else:
-                print("Maven wrapper not found, falling back to system's Maven command")
                 cmd = ['mvn', 'clean', 'compile', '-DskipTests']
 
-            print(f"Running Maven command: {' '.join(cmd)}")
-            print(f"Working directory: {project_dir}")
+
 
             result = subprocess.run(
                 cmd,
@@ -85,70 +80,42 @@ class BuildSystemManager:
             return False
 
     def _compile_gradle_project(self, project_dir: str) -> bool:
-        """Compile a Gradle project."""
         try:
             project_dir = os.path.abspath(project_dir)
-            print(f"Starting Gradle project compilation in {project_dir}")
+            print(f"Compiling Gradle project in: {project_dir}")
 
-            # Get required Java version from build.gradle
-            required_version = self._get_required_java_version(project_dir)
-            print(f"Project requires Java version: {required_version}")
-
-            # Use only the wrapper name because cwd is set
             wrapper_name = 'gradlew.bat' if os.name == 'nt' else './gradlew'
             wrapper_path = os.path.join(project_dir, wrapper_name)
 
             if os.path.exists(wrapper_path):
-                # Try to find compatible Java version
-                java_home = self._find_compatible_java(required_version)
-                if java_home:
-                    print(f"Using Java installation found at: {java_home}")
-                    env = os.environ.copy()
-                    env['JAVA_HOME'] = java_home
-                    # Use only common JVM arguments
-                    cmd = [wrapper_name, 'compileJava', '-x', 'test',
-                           '-Dorg.gradle.java.home=' + java_home,
-                           '-Dorg.gradle.jvmargs=-Xmx2048m']
-                else:
-                    print(
-                        "No compatible Java version found. Attempting to use system default Java")
-                    cmd = [wrapper_name, 'compileJava', '-x', 'test']
+                cmd = [wrapper_name, 'compileJava', '-x', 'test']
             else:
-                print(
-                    "Gradle wrapper not found. Trying to use system's Gradle installation")
                 cmd = ['gradle', 'compileJava', '-x', 'test']
 
-            print(f"Running Gradle command: {' '.join(cmd)}")
-            print(f"Working directory: {project_dir}")
-
+            print(f"Running: {' '.join(cmd)}")
             result = subprocess.run(
                 cmd,
                 cwd=project_dir,
                 capture_output=True,
                 text=True,
-                shell=(os.name == 'nt'),
-                env=env if 'env' in locals() else None
+                shell=(os.name == 'nt')
             )
 
             if result.returncode != 0:
-                error_msg = f"Gradle compilation failed with error: {result.stderr}"
-                print(error_msg)
-                raise RuntimeError(error_msg)
+                print(f"Compilation failed:\n{result.stderr}")
+                return False
 
-            # Find the build/classes directory
             build_dir = os.path.join(
                 project_dir, 'build', 'classes', 'java', 'main')
             if not os.path.exists(build_dir):
-                print(
-                    f"Gradle build directory not found at expected location: {build_dir}")
+                print(f"Compiled class directory missing: {build_dir}")
                 return False
 
-            # Copy compiled classes to our bin directory
             self._copy_compiled_classes(build_dir)
             return True
 
         except Exception as e:
-            print(f"Error during Gradle project compilation: {str(e)}")
+            print(f"Gradle compilation error: {str(e)}")
             return False
 
     def _get_required_java_version(self, project_dir: str) -> str:
@@ -172,112 +139,37 @@ class BuildSystemManager:
             elif target_match:
                 return target_match.group(1)
             else:
-                # Default to Java 8 if no version specified
                 return '1.8'
 
         except Exception as e:
             print(
                 f"Could not determine Java version from build.gradle: {str(e)}")
-            return '1.8'  # Default to Java 8
-
-    def _find_compatible_java(self, required_version: str) -> str:
-        """Find a compatible Java version in the system, prioritizing Java 8."""
-        try:
-            # First try JAVA_HOME environment variable
-            if 'JAVA_HOME' in os.environ:
-                java_home = os.environ['JAVA_HOME']
-                if os.path.exists(java_home):
-                    print(
-                        f"Using Java from JAVA_HOME environment variable: {java_home}")
-                    return java_home
-
-            # Prioritize Java 8 paths first
-            java8_paths = [
-                r"C:\Program Files\Java\jdk1.8.0_*",
-                r"C:\Program Files (x86)\Java\jdk1.8.0_*"
-            ]
-
-            print("Looking for Java 8 installation first...")
-            for base_path in java8_paths:
-                # Try exact path first
-                if os.path.exists(base_path):
-                    print(f"Found Java 8 at: {base_path}")
-                    return base_path
-
-                # Try glob pattern for versioned paths
-                matches = glob.glob(base_path)
-                if matches:
-                    # Sort matches to get the latest version
-                    matches.sort(reverse=True)
-                    print(f"Found Java 8 at: {matches[0]}")
-                    return matches[0]
-
-            # If Java 8 not found, try other versions
-            other_versions = {
-                '11': [
-                    r"C:\Program Files\Java\jdk-11",
-                    r"C:\Program Files (x86)\Java\jdk-11"
-                ],
-                '17': [
-                    r"C:\Program Files\Java\jdk-17",
-                    r"C:\Program Files (x86)\Java\jdk-17"
-                ]
-            }
-
-            print("Java 8 not found, checking for Java 11 or 17 instead...")
-            for version, paths in other_versions.items():
-                for base_path in paths:
-                    if os.path.exists(base_path):
-                        print(f"Found Java {version} at: {base_path}")
-                        return base_path
-                    matches = glob.glob(base_path)
-                    if matches:
-                        matches.sort(reverse=True)
-                        print(f"Found Java {version} at: {matches[0]}")
-                        return matches[0]
-
-            # Try to find Java in PATH
-            try:
-                result = subprocess.run(
-                    ['where', 'java'], capture_output=True, text=True)
-                if result.returncode == 0 and result.stdout:
-                    java_path = result.stdout.strip().split('\n')[0]
-                    java_dir = os.path.dirname(java_path)
-                    if os.path.exists(java_dir):
-                        print(f"Found Java in system PATH: {java_dir}")
-                        return java_dir
-            except Exception as e:
-                print(f"Could not locate Java in system PATH: {str(e)}")
-
-            print("Could not find any compatible Java installation")
-            return None
-
-        except Exception as e:
-            print(f"Error while searching for compatible Java: {str(e)}")
-            return None
+            return '1.8'  
 
     def _copy_compiled_classes(self, source_dir: str):
         """Copy compiled classes to our bin directory without clearing existing ones."""
         try:
             # Copy only new or updated classes instead of clearing all first
             files_copied = 0
-            
+
             for root, _, files in os.walk(source_dir):
                 for file in files:
                     if file.endswith('.class'):
                         src_path = os.path.join(root, file)
                         rel_path = os.path.relpath(src_path, source_dir)
                         dst_path = os.path.join(self.bin_dir, rel_path)
-                        
+
                         # Only copy if file doesn't exist or is newer
                         if not os.path.exists(dst_path) or \
-                        os.path.getmtime(src_path) > os.path.getmtime(dst_path):
-                            os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+                                os.path.getmtime(src_path) > os.path.getmtime(dst_path):
+                            os.makedirs(os.path.dirname(
+                                dst_path), exist_ok=True)
                             shutil.copy2(src_path, dst_path)
                             files_copied += 1
-            
-            print(f"Copied {files_copied} new/updated class files to {self.bin_dir}")
-            
+
+            print(
+                f"Copied {files_copied} new/updated class files to {self.bin_dir}")
+
         except Exception as e:
             print(f"Error while copying compiled classes: {str(e)}")
 
@@ -381,7 +273,6 @@ class BuildSystemManager:
             # Check if we need to compile
             needs_compile = False
 
-            # If we have a record of this project being compiled already
             if hasattr(self, '_built_projects') and project_dir in self._built_projects:
                 last_build_time = self._built_projects[project_dir]
                 file_mod_time = os.path.getmtime(file_path)
@@ -460,9 +351,6 @@ class BuildSystemManager:
             java_files = [file_path] + dependent_files
             print(f"Total files to compile: {len(java_files)}")
 
-            # Create classpath including:
-            # 1. Output directory (where source files are)
-            # 2. Binary directory (where compiled classes will be)
             classpath = [
                 self.output_dir,
                 bin_dir
@@ -478,10 +366,10 @@ class BuildSystemManager:
                 "-d", bin_dir,
                 "-cp", os.pathsep.join(classpath),
                 "-encoding", "UTF-8",
-                "-Xlint:none",  # Disable warnings
-                "-Xlint:unchecked",  # Enable unchecked warnings
-                "-Xlint:deprecation",  # Enable deprecation warnings
-                "-sourcepath", self.output_dir  # Add sourcepath to help find dependencies
+                "-Xlint:none",
+                "-Xlint:unchecked",
+                "-Xlint:deprecation",
+                "-sourcepath", self.output_dir
             ]
 
             # Add all files to compile
@@ -494,7 +382,7 @@ class BuildSystemManager:
                 cmd,
                 capture_output=True,
                 text=True,
-                check=False  # Don't raise exception on non-zero exit
+                check=False
             )
 
             # Check compilation result
@@ -563,9 +451,9 @@ class BuildSystemManager:
 
                 # Check if this file contains any of the imported classes
                 for imp in imports:
-                    # Convert import to class name
+
                     class_name = imp.split('.')[-1]
-                    # Look for class declaration
+
                     if f"class {class_name}" in file_content:
                         print(
                             f"Found dependency: {os.path.basename(java_file)} contains imported class {class_name}")
@@ -589,3 +477,4 @@ class BuildSystemManager:
         except Exception as e:
             print(f"Error while finding dependencies: {str(e)}")
             return []
+
