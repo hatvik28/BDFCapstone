@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const previousSolution = solutionCode.textContent.trim();
                 solutionBox.setAttribute('data-previous-solution', previousSolution);
                 
-                // If we got a response about the repository update, store that code
+      
                 if (data.repo_updated) {
                     solutionBox.setAttribute('data-current-repo-code', data.updated_solution);
                 }
