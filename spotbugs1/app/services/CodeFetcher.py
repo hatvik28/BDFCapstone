@@ -167,17 +167,7 @@ class CodeFetcher:
 
     @staticmethod
     def extract_repo_details(github_url):
-        """Extract repository details from GitHub URL.
 
-        Args:
-            github_url: URL to either:
-                - A forked repository
-                - User's own repository
-                - A specific file in either repository
-
-        Returns:
-            tuple: (repo_name, file_path) or (None, None) if invalid
-        """
         # Handles both full path to file and general repo URL
         match = re.search(
             r"github\.com/([^/]+)/([^/]+)/blob/(?:main|master)/(.+)", github_url)
