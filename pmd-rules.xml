@@ -6,7 +6,6 @@
          http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
 
     <description>
-        Ruleset to detect injected bugs in BadCodeExample.java
     </description>
 
     
