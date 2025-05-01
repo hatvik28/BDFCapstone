@@ -305,10 +305,9 @@ def commit_changes():
         repo_path = facade.github_fetcher.local_repo_path
 
         if not repo_path or not os.path.exists(repo_path):
-            print("[RECOVERY] Attempting to re-clone GitHub repo...")
+            print("Attempting to re-clone GitHub repo...")
 
             if not facade.repo_name:
-                print("[ERROR] No repository name found in facade")
                 # Try to get the repository URL from the request
                 data = request.get_json()
                 repo_url = data.get('repo_url')
@@ -328,17 +327,14 @@ def commit_changes():
                             "message": "Invalid repository URL format."
                         }), 400
 
-                    print(f"[RECOVERY] Setting repository name: {repo_name}")
+                    print(f"Setting repository name: {repo_name}")
                     facade.repo_name = repo_name
                     facade.github_fetcher.repo_name = repo_name
 
-                    print(
-                        f"[RECOVERY] Attempting to analyze repository: {repo_url}")
                     facade.analyze_github_repository(repo_url)
                     repo_path = facade.github_fetcher.local_repo_path
-                    print(f"[RECOVERY] Repository analyzed successfully")
                 except Exception as e:
-                    print(f"[ERROR] Failed to analyze repository: {str(e)}")
+                    print(f"Failed to analyze repository: {str(e)}")
                     return jsonify({
                         "success": False,
                         "message": f"Failed to analyze repository: {str(e)}"
