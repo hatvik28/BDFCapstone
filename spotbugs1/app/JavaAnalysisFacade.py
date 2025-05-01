@@ -345,12 +345,7 @@ class JavaAnalysisFacade:
 
     def validate_bug(self, filename: str, bug_line: str, bug_type: str, original_code: str = None, patched_code: str = None, tool: str = 'spotbugs') -> dict:
         """
-        Validate if a specific bug has been fixed, while also checking for other bugs.
-
-        Returns a dictionary containing:
-        - bug_fixed: bool - Whether the specific bug was fixed
-        - other_bugs: list - Any remaining bugs in the file
-        - validation_message: str - Human readable message about the validation
+        Validate if a specific bug has been fixed for both PMD and Spotbugs.
         """
         try:
             # Get validation results from validator
