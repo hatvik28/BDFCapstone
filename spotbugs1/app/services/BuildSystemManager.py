@@ -210,17 +210,6 @@ class BuildSystemManager:
             return None, None
 
     def _find_project_root(self, file_path: str) -> str:
-        """Find the project root directory by looking for build files in parent directories.
-
-        This is a fallback method when _find_build_files doesn't find build files in the repository.
-        It looks up the directory tree for build files (pom.xml or build.gradle).
-
-        Args:
-            file_path: Path to the Java file being analyzed
-
-        Returns:
-            Path to the project root directory, or None if not found
-        """
         current_dir = os.path.dirname(file_path)
 
         # Look up to 5 levels up for build files
