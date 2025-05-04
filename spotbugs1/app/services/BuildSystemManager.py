@@ -1,13 +1,13 @@
 import os
- import subprocess
- import re
- import glob
- import shutil
- import time
- from typing import Tuple, List, Optional
+import subprocess
+import re
+import glob
+import shutil
+import time
+from typing import Tuple, List, Optional
  
  
- class BuildSystemManager:
+class BuildSystemManager:
      def __init__(self, output_dir: str, bin_dir: str, spotbugs_path: str, repo_root_dir: str):
          """Initialize the BugAnalyzer with necessary paths."""
          # Convert all paths to absolute paths
