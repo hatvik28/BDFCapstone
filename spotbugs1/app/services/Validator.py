@@ -68,7 +68,7 @@ class Validator:
             }
 
     def _validate_spotbugs_bug(self, filename: str, bug_line: str, bug_type: str, bug_descriptions, original_code: str, patched_code: str) -> dict:
-        """Validate a bug using SpotBugs analysis, considering file, type, and line range."""
+        """Validate a bug using SpotBugs analysis. """
         file_path = os.path.join(self.output_dir, filename)
         report_path = os.path.join(self.output_dir, "spotbugs_report.xml")
 
