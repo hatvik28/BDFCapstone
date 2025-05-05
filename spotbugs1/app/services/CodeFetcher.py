@@ -10,18 +10,17 @@ import stat
 class CodeFetcher:
     def __init__(self, repo_name, output_dir, token):
         self.repo_name = repo_name
-        self.output_dir = output_dir  # This will now be cloned_repo
+        self.output_dir = output_dir
         self.token = self._validate_token(token)
-        self.local_repo_path = None  # path to cloned Git repo
-        self.parent_repo_url = None  # path to parent repository
-        self.repo = None  # Git repo object
+        self.local_repo_path = None
+        self.parent_repo_url = None
+        self.repo = None
 
     def _validate_token(self, token: str) -> str:
         """Validate the GitHub token and ensure it has necessary permissions."""
         if not token:
             raise ValueError("GitHub token is required")
 
-        # Test the token with a simple API call
         headers = {
             "Authorization": f"token {token}",
             "Accept": "application/vnd.github.v3+json"
@@ -59,12 +58,9 @@ class CodeFetcher:
                     except Exception as e:
                         print(
                             f" Failed to remove .git directory: {e}")
-                        # Continue with other files even if .git removal fails
 
-                # Add a small delay to allow file handles to be released
                 time.sleep(1)
 
-                # Try to remove the rest of the directory
                 for root, dirs, files in os.walk(directory, topdown=False):
                     for name in files:
                         try:
@@ -84,7 +80,6 @@ class CodeFetcher:
                             print(
                                 f" Failed to remove directory {name}: {e}")
 
-                # Try to remove the root directory
                 try:
                     os.rmdir(directory)
                 except Exception as e:
@@ -93,10 +88,8 @@ class CodeFetcher:
             except Exception as e:
                 print(
                     f" Failed to clean {directory} Please try again: {e}")
-                # Don't raise the exception, just log it
 
     def clone_repo(self):
-        """Clone the repository (either forked or user's own)."""
         clone_dir = os.path.join("cloned_repo")
 
         def force_remove_readonly(func, path, excinfo):
@@ -120,7 +113,6 @@ class CodeFetcher:
         else:
             print(" Working with your own repository")
 
-        # Use HTTPS with token in URL for authentication
         clone_url = f"https://{self.token}:x-oauth-basic@github.com/{self.repo_name}.git"
         print(f" Cloning from: {clone_url}")
 
@@ -134,10 +126,7 @@ class CodeFetcher:
             raise RuntimeError(f"Failed to clone repository: {e}")
 
     def fetch_java_files_from_local_clone(self) -> list:
-        """
-        After cloning, find all .java files inside the cloned repo
-        and return their contents.
-        """
+
         java_files = []
 
         if not self.local_repo_path or not os.path.exists(self.local_repo_path):
@@ -149,11 +138,10 @@ class CodeFetcher:
                 if file.endswith(".java"):
                     full_path = os.path.join(root, file)
 
-                    # Calculate relative path from repo root
                     rel_path = os.path.relpath(full_path, self.local_repo_path)
 
                     try:
-                        # Read the file content
+
                         with open(full_path, "r", encoding="utf-8") as f:
                             content = f.read()
                             java_files.append({
@@ -185,12 +173,11 @@ class CodeFetcher:
         return None, None
 
     def setup_upstream(self, original_repo_url: str = None) -> bool:
-        """Set up upstream remote for the original repository."""
+
         try:
             if not self.repo:
                 self.repo = git.Repo(self.local_repo_path)
 
-            # If no URL provided and we have parent_repo_url, use that
             if not original_repo_url and hasattr(self, 'parent_repo_url'):
                 original_repo_url = self.parent_repo_url
 
