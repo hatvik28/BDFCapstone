@@ -23,9 +23,6 @@ class Validator:
     def validate_bug(self, filename: str, bug_line: str, bug_type: str, bug_descriptions, original_code: str, patched_code: str, tool: str = 'spotbugs') -> dict:
         """
         Performs bug fix validation using static analysis.
-        Returns a dictionary with validation results including:
-        - bug_fixed: whether the specific bug was fixed
-        - other_bugs: list of other bugs still present
         """
         try:
             # Initialize results
@@ -97,15 +94,15 @@ class Validator:
                 bug_line_int = -1
 
             # Define a range around the original bug line to account for line shifts
-            line_range = 5  # Look 5 lines before and after the original line
+            line_range = 5  
             min_line = max(1, bug_line_int - line_range)
             max_line = bug_line_int + line_range
 
             # 2. Find specific bug by type within the file_bugs and line range
             specific_bug_exists = False
-            # Iterate only over bugs from the target file
+
             for bug in file_bugs:
-                # Check if the bug type matches (case insensitive)
+   
                 if bug.get('type', '').lower() == bug_type.lower():
                     try:
                         bug_line_in_report = int(bug.get('line', '-1').strip())
@@ -122,11 +119,11 @@ class Validator:
                 # Return 'other_bugs' only from the current file
                 return {
                     'bug_fixed': True,
-                    'other_bugs': file_bugs  # Return all bugs found in this file
+                    'other_bugs': file_bugs 
                 }
             else:
-                # 3. Get other bugs (only from the *current file*, excluding the specific bug type)
-                # Filter from file_bugs, not all_bugs_in_report
+
+
                 other_bugs = [bug for bug in file_bugs if bug.get(
                     'type', '').lower() != bug_type.lower()]
             return {
@@ -142,12 +139,12 @@ class Validator:
                 'other_bugs': []
             }
 
-    # Helper method to normalize filenames for comparison
+
     def _normalize_filename(self, filename: str) -> str:
         """Normalize filename to handle different path formats."""
         if not filename:
             return ""
-        # Remove path and convert to lowercase for case-insensitive comparison
+
         return os.path.basename(filename).lower().strip()
 
     def _validate_pmd_bug(self, filename: str, bug_line: str, bug_type: str, original_code: str, patched_code: str) -> dict:
@@ -166,7 +163,7 @@ class Validator:
                 bug_line_int = -1
 
             # Define a range around the original bug line to account for line shifts
-            line_range = 10  # Look 10 lines before and after the original line
+            line_range = 10  
             min_line = max(1, bug_line_int - line_range)
             max_line = bug_line_int + line_range
 
@@ -187,7 +184,6 @@ class Validator:
                     except ValueError:
                         continue
 
-            # Get other bugs (excluding the specific bug type we're validating)
             other_bugs = [bug for bug in updated_bugs if bug.get('rule', '').lower() != bug_type.lower()
                           and bug.get('type', '').lower() != bug_type.lower()]
 
