@@ -70,7 +70,7 @@ def get_file_content():
             "bugs": bugs,
             "num_bugs": num_bugs,
             "metrics": metrics,
-            "analysis_tool": tool.capitalize()  # Capitalize the tool name
+            "analysis_tool": tool.capitalize()  
         }), 200
 
     except Exception as e:
@@ -133,14 +133,13 @@ def update_solution():
         # Apply the updated solution snippet to the original code
         solution_dir = facade.solution_applier.apply_solution_to_temp_dir(
             original_code=original_code,
-            code_snippet=current_solution,  # The snippet we're replacing
-            # Use the updated snippet for replacement
+            code_snippet=current_solution,  
             solution=updated_solution['snippet'],
             filename=filename,
             solution_number=solution_number
         )
 
-        # Read the newly created file to get the integrated solution
+
         temp_file_path = os.path.join(solution_dir, os.path.basename(filename))
         with open(temp_file_path, 'r', encoding='utf-8') as f:
             integrated_solution = f.read()
@@ -156,9 +155,8 @@ def update_solution():
         _ = facade.ck_metrics.get_original_metrics(os.path.basename(filename))
 
         return jsonify({
-            # The updated snippet
             "updated_solution": updated_solution['snippet'],
-            "full_solution": integrated_solution,  # Full updated file for download/view
+            "full_solution": integrated_solution,  
             "solution_dir": solution_dir
         })
 
@@ -180,7 +178,6 @@ def apply_solution():
             data.get('file_path'),
             data.get('code_snippet'),
             data.get('solution'),
-            # Default to solution 1 if not specified
             data.get('solution_number', 1)
         )
 
@@ -341,7 +338,7 @@ def commit_changes():
                     }), 500
 
             try:
-                facade.github_fetcher.repo_name = facade.repo_name  # Ensure repo_name is set
+                facade.github_fetcher.repo_name = facade.repo_name  
                 facade.github_fetcher.clone_repo()
                 repo_path = facade.github_fetcher.local_repo_path
             except Exception as e:
@@ -360,13 +357,10 @@ def commit_changes():
         commit_message = data.get(
             'commit_message', 'Automated bug fixes applied')
 
-        # Get the absolute path of the repo
         repo_abs_path = os.path.abspath(repo_path)
 
-        # Initialize git repo
         repo = git.Repo(repo_path)
 
-        # Add all Java files at once using git add with a pattern
         repo.git.add('*.java')
 
         # Commit and push
