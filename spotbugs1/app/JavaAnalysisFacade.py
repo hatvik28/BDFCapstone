@@ -24,7 +24,7 @@ class JavaAnalysisFacade:
                  output_dir: str = OUTPUT_DIR,
                  bin_dir: str = BIN_DIR,
                  spotbugs_path: str = SPOTBUGS_PATH,
-                 pmd_path: str = PMD_PATH,  # PMD re-enabled
+                 pmd_path: str = PMD_PATH,  
                  pmd_ruleset_path: str = PMD_RULESET_PATH,
                  pmd_report_path: str = PMD_REPORT_PATH,
                  llm_api_key: Optional[str] = None,
@@ -46,13 +46,13 @@ class JavaAnalysisFacade:
         self.llm_model = LLMModel(
             llm_api_key) if llm_api_key else None
         self.solution_applier = SolutionApplier(GOOGLE_FORMATTER_PATH)
-        self.pmd_analyzer = PMDAnalyzer(  # PMD re-enabled
+        self.pmd_analyzer = PMDAnalyzer(  
             pmd_path, pmd_ruleset_path, pmd_report_path)
         self.build_system_manager = BuildSystemManager(
             output_dir, bin_dir, spotbugs_path, REPO_ROOT_DIR)
         self.validator = Validator(
             output_dir, bin_dir, spotbugs_path, self.spotbugs_analyzer,
-            self.pmd_analyzer, self.build_system_manager)  # Added build_system_manager
+            self.pmd_analyzer, self.build_system_manager)  
         self.ck_metrics = CKMetricsAnalyzer()
         self.solution_metrics = SolutionMetricsAnalyzer()
         # Load bug descriptions
@@ -62,11 +62,11 @@ class JavaAnalysisFacade:
         self._bugs_cache = {}
         self._metrics_cache = {}
         self._last_analysis_time = {}
-        self._cache_timeout = 300  # 5 minutes cache timeout
+        self._cache_timeout = 300 
 
         # Add build cache
-        self._built_projects = {}  # Dictionary to track {project_dir: timestamp}
-        self._compiled_files = {}  # Dictionary to track which class files exist
+        self._built_projects = {}  
+        self._compiled_files = {}  
 
         # Add persistent cache for initial metrics
         self._initial_metrics_cache = {}
@@ -78,7 +78,6 @@ class JavaAnalysisFacade:
                 print(f"Cleaning bin directory: {self.bin_dir}")
                 # Remove all files and subdirectories in the bin directory
                 for root, dirs, files in os.walk(self.bin_dir, topdown=False):
-                    # First remove all files
                     for file in files:
                         file_path = os.path.join(root, file)
                         try:
@@ -87,7 +86,7 @@ class JavaAnalysisFacade:
                             print(
                                 f"Failed to remove file {file_path}: {e}")
 
-                    # Then remove all directories (except the root bin directory)
+         
                     for dir in dirs:
                         dir_path = os.path.join(root, dir)
                         try:
@@ -143,7 +142,7 @@ class JavaAnalysisFacade:
             report_filename = f"{tool}_report_{os.path.basename(filename)}.xml"
             report_path = os.path.join(self.output_dir, report_filename)
 
-            # Check if we need to compile (do this before cache check)
+            # Check if we need to compile 
             needs_compilation = tool.lower() == 'spotbugs'
             if needs_compilation:
                 rel_path = os.path.relpath(file_path, self.output_dir)
@@ -290,25 +289,23 @@ class JavaAnalysisFacade:
             metrics_data = {}
 
             try:
-                # Retrieve initial metrics from the persistent cache
+
                 initial_metrics = self._initial_metrics_cache.get(filename, {})
                 if not initial_metrics:
                     print(
                         f"  Initial metrics not found in cache for {filename}. Comparison might be inaccurate.")
-                    # As a fallback, calculate current metrics before apply (less ideal)
+
                     metrics_list = self.ck_metrics.get_original_metrics(
                         filename)
                     initial_metrics = metrics_list[0] if metrics_list else {}
 
 
-                # Get metrics for the applied solution ("After" state)
                 solution_metrics_list = self.solution_metrics.calculate_metrics_for_applied_solution(
                     filename, solution_dir, solution_number
                 )
                 solution_metrics = solution_metrics_list[0] if solution_metrics_list else {
                 }
 
-                # Calculate improvements comparing INITIAL vs APPLIED
                 ck_improvements = {}
                 for key in ["wmc", "loc"]:
                     # Use initial_metrics for 'before'
@@ -316,14 +313,14 @@ class JavaAnalysisFacade:
                     # Use solution_metrics for 'after'
                     after = int(solution_metrics.get(key, 0))
                     ck_improvements[key] = {
-                        "before": before,  # Represents the initial state
-                        "after": after,   # Represents the state after this fix
+                        "before": before,  
+                        "after": after,   
                         "delta": after - before  # Change from initial state
                     }
 
                 metrics_data = {
-                    "original_metrics": initial_metrics,  # Now represents the true original
-                    "solution_metrics": solution_metrics,  # State after current fix
+                    "original_metrics": initial_metrics,  
+                    "solution_metrics": solution_metrics,  
                     "improvements": ck_improvements  # Comparison between initial and current fix
                 }
 
@@ -402,14 +399,13 @@ class JavaAnalysisFacade:
 
     def _normalize_file_path(self, file_path: str) -> str:
         """Normalize a file path to handle different formats."""
-        # Remove any leading/trailing slashes and convert to lowercase
+
         normalized = file_path.strip().lower()
 
-        # If it's just a filename, return it
+
         if not os.path.sep in normalized:
             return normalized
 
-        # If it's a full path, get just the filename
         return os.path.basename(normalized)
 
     def _get_file_bugs(self, filename: str, report_path: str) -> List[Dict]:
@@ -470,7 +466,7 @@ class JavaAnalysisFacade:
             print(f"[WARN] Failed to parse PMD results: {str(e)}")
             return []
 
-        # Filter bugs by filename - handle different path formats
+
         file_bugs = []
         normalized_filename = self._normalize_file_path(filename)
 
@@ -530,14 +526,12 @@ class JavaAnalysisFacade:
         """Get cached bugs data if available and valid, but always get fresh metrics."""
         cache_key = f"{filename}_{tool}"
 
-        # Get cached bugs if valid
         if self._is_cache_valid(filename, tool):
             cached_bugs = self._bugs_cache.get(cache_key, [])
 
-            # Always get fresh metrics for the file
+
             base_filename = os.path.basename(filename)
 
-            # Get metrics - Check initial cache first
             if base_filename in self._initial_metrics_cache:
                 print(
                     f" Using initial metrics from cache for {base_filename}")
@@ -550,7 +544,7 @@ class JavaAnalysisFacade:
                 if metrics and "error" not in metrics:
                     print(
                         f" Storing initial metrics for {base_filename}")
-                    # Store in persistent cache
+
                     self._initial_metrics_cache[base_filename] = metrics
 
             return cached_bugs, metrics
