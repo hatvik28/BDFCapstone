@@ -17,7 +17,6 @@ class CodeFetcher:
         self.repo = None
 
     def _validate_token(self, token: str) -> str:
-        """Validate the GitHub token and ensure it has necessary permissions."""
         if not token:
             raise ValueError("GitHub token is required")
 
@@ -47,7 +46,6 @@ class CodeFetcher:
             raise ValueError(f"Failed to validate GitHub token: {str(e)}")
 
     def cleanup_directory(self, directory):
-        """Clean up a directory and its contents."""
         if os.path.exists(directory):
             try:
                 # First try to remove .git directory separately
@@ -126,7 +124,6 @@ class CodeFetcher:
             raise RuntimeError(f"Failed to clone repository: {e}")
 
     def fetch_java_files_from_local_clone(self) -> list:
-
         java_files = []
 
         if not self.local_repo_path or not os.path.exists(self.local_repo_path):
@@ -155,7 +152,6 @@ class CodeFetcher:
 
     @staticmethod
     def extract_repo_details(github_url):
-
         # Handles both full path to file and general repo URL
         match = re.search(
             r"github\.com/([^/]+)/([^/]+)/blob/(?:main|master)/(.+)", github_url)
@@ -194,7 +190,6 @@ class CodeFetcher:
             return False
 
     def is_fork(self) -> bool:
-        """Check if the current repository is a fork using GitHub API."""
         try:
             # Extract owner and repo from repo_name
             owner, repo = self.repo_name.split('/')
