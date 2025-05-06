@@ -19,3 +19,7 @@ python-dotenv==1.0.0
 redis==5.0.1
 psutil==7.0.0
 
+# Testing Dependencies
+pytest==7.4.3
+pytest-cov==4.1.0
+
