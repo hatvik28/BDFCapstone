@@ -73,14 +73,17 @@ document.getElementById('commitChangesBtn').addEventListener('click', function (
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(data.message);
-                location.reload();
+                // Create Bootstrap alert instead of using basic alert
+                showBootstrapAlert('success', data.message);
+                setTimeout(() => {
+                    location.reload();
+                }, 2000); 
             } else {
-                alert(`Commit failed: ${data.message}`);
+                showBootstrapAlert('danger', `Commit failed: ${data.message}`);
             }
         })
         .catch(error => {
-            alert(`Commit failed: ${error}`);
+            showBootstrapAlert('danger', `Commit failed: ${error}`);
             console.error("[Commit Error]", error);
         })
         .finally(() => {
@@ -95,3 +98,42 @@ document.getElementById('commitChangesBtn').addEventListener('click', function (
         }
     });
 });
+
+// Function to show Bootstrap alert
+function showBootstrapAlert(type, message) {
+    // First, remove any existing alerts
+    const existingAlerts = document.querySelectorAll('.bootstrap-alert');
+    existingAlerts.forEach(alert => alert.remove());
+
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} fade show bootstrap-alert`;
+    alertDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 400px;
+        min-width: 300px;
+        z-index: 2000;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        text-align: center;
+    `;
+    
+    alertDiv.innerHTML = `${message}`;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            // Fade out and remove
+            alertDiv.classList.remove('show');
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 150); 
+        }
+    }, 5000);
+}
+
