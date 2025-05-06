@@ -35,13 +35,11 @@ class BugAnalyzer:
         spotbugs_command = [
             self.spotbugs_path,
             "-textui",
-            "-effort:max",  # Maximum precision analysis
-            "-low",      # Only report medium and high priority bugs
-            "-xml",        # XML output
+            "-effort:max", 
+            "-low",  
+            "-xml",        
             "-output", report_path,
-            # Omit visitors that often give false positives
             "-omitVisitors", "FindDeadLocalStores,FindUnrelatedTypesInGenericContainer",
-            # Only analyze specific bug categories
             "-bugCategories", "BAD_PRACTICE,CORRECTNESS,PERFORMANCE,SECURITY",
             self.bin_dir
         ]
@@ -82,7 +80,6 @@ class BugAnalyzer:
                 role = source_line.get('role')
 
                 if bug_type.startswith("NP_"):
-                    # Null bugs → collect trace lines
                     if role == 'SOURCE_LINE_NULL_VALUE':
                         assign_line = line_number
                     elif role == 'SOURCE_LINE_KNOWN_NULL':
@@ -90,11 +87,9 @@ class BugAnalyzer:
                     elif role == 'SOURCE_LINE_INVOKED':
                         deref_line = line_number
                 else:
-                    # For other bugs (STYLE, I18N, etc) → report first line found
                     if deref_line is None:
                         deref_line = line_number
 
-            # If dereference line not found for NP bugs, fallback
             if not deref_line:
                 deref_line = assign_line or propagation_line or line_number
 
@@ -151,27 +146,22 @@ class BugAnalyzer:
             with open(file_path, 'r', encoding='utf-8') as file:
                 lines = file.readlines()
 
-            # Convert line_number to integer
             try:
                 line_number = int(line_number)
             except ValueError:
                 line_number = 1
 
-            # Adjust for zero-indexing
             line_idx = line_number - 1
 
-            # Get the exact line where the bug occurs
             if 0 <= line_idx < len(lines):
                 exact_line = lines[line_idx].strip()
             else:
                 exact_line = "ERROR: Line number out of range"
 
-            # Create a window: 2 lines before + bug line + 2 after
             start = max(0, line_number - 3)
             end = min(len(lines), line_number + 2)
             context_code = "".join(lines[start:end]).strip()
 
-            # Construct GPT prompt
             prompt = f"""
             You are an expert Java code analyzer. You must follow these instructions PRECISELY.
 
