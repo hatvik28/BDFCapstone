@@ -99,13 +99,11 @@ document.getElementById('commitChangesBtn').addEventListener('click', function (
     });
 });
 
-// Function to show Bootstrap alert
+
 function showBootstrapAlert(type, message) {
-    // First, remove any existing alerts
     const existingAlerts = document.querySelectorAll('.bootstrap-alert');
     existingAlerts.forEach(alert => alert.remove());
 
-    // Create alert element
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type} fade show bootstrap-alert`;
     alertDiv.style.cssText = `
@@ -126,7 +124,6 @@ function showBootstrapAlert(type, message) {
     
     setTimeout(() => {
         if (alertDiv.parentNode) {
-            // Fade out and remove
             alertDiv.classList.remove('show');
             setTimeout(() => {
                 if (alertDiv.parentNode) {
