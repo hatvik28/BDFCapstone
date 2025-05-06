@@ -40,7 +40,7 @@ metrics_cache = MetricsCache()
 
 def organize_ck_outputs(output_root="ck_output_solutions"):
     """Move CK output files into their respective solution folders."""
-    # Find all solution_*class.csv files in the root
+
     for file_path in glob.glob(os.path.join(output_root, "solution_*class.csv")):
         filename = os.path.basename(file_path)
         match = re.match(r"(solution_\d+)class\.csv", filename)
@@ -119,11 +119,10 @@ class BaseCKAnalyzer:
     def get_metrics_for_file(self, filename, source_dir, output_dir):
         all_metrics = self.run_ck_metrics(source_dir, output_dir)
         target_file = os.path.basename(filename).strip().lower()
-        # Remove extension to get class name
         target_class = os.path.splitext(target_file)[0]
 
         matches = []
-        primary_matches = []  # For classes that match the filename
+        primary_matches = []  
 
         for row in all_metrics:
             file_path = row.get("file", "")
@@ -135,16 +134,13 @@ class BaseCKAnalyzer:
             if (
                 base == target_file and
                 type_name == "class" and
-                "$" not in class_name  # Exclude anonymous/inner classes
+                "$" not in class_name  
             ):
-                # Check if class name matches the filename (case-insensitive)
                 if class_name.lower() == target_class:
                     primary_matches.append(row)
                 else:
                     matches.append(row)
 
-        # Return priority matches first (classes matching filename), then other matches
-        # This ensures the frontend gets the matching class first
         return primary_matches + matches
 
 
@@ -155,11 +151,10 @@ class CKMetricsAnalyzer(BaseCKAnalyzer):
             os.path.join(BASE_DIR, '..', '..', 'cloned_repo'))
         self.output_dir = os.path.abspath(
             os.path.join(BASE_DIR, '..', '..', 'ck_output'))
-        self.metrics_cache = MetricsCache()  # Initialize own cache instance
+        self.metrics_cache = MetricsCache()  
 
     def get_original_metrics(self, filename):
         """Get metrics for the original file."""
-        # Check cache first
         cache_key = self.metrics_cache.generate_key(filename, "original")
         cached_metrics = self.metrics_cache.get(cache_key)
         if cached_metrics:
@@ -179,31 +174,26 @@ class CKMetricsAnalyzer(BaseCKAnalyzer):
 class SolutionMetricsAnalyzer(BaseCKAnalyzer):
     def __init__(self):
         super().__init__()
-        self.metrics_cache = MetricsCache()  # Initialize own cache instance
+        self.metrics_cache = MetricsCache() 
 
     def calculate_metrics_for_applied_solution(self, filename, solution_dir, solution_number):
         """Calculate metrics for an applied solution."""
-        # Create output folder for metrics
         solution_output_dir = os.path.join(
             "ck_output_solutions", f"solution_{solution_number}")
         os.makedirs(solution_output_dir, exist_ok=True)
 
-        # Check cache first
         cache_key = self.metrics_cache.generate_key(filename, solution_number)
         cached_metrics = self.metrics_cache.get(cache_key)
         if cached_metrics:
             return cached_metrics
 
-        # Run CK metrics if not cached
+
         self.run_ck_metrics(solution_dir, solution_output_dir)
 
-        # Organize CK output files
         organize_ck_outputs()
 
-        # Parse metrics
         metrics = self._parse_class_metrics(solution_output_dir)
-
-        # Filter metrics for the specific file
+        
         filename_lower = os.path.basename(filename).strip().lower()
         file_metrics = []
 
@@ -214,7 +204,6 @@ class SolutionMetricsAnalyzer(BaseCKAnalyzer):
             if base == filename_lower and row.get("type", "").lower() == "class":
                 file_metrics.append(row)
 
-        # Cache the results
         if file_metrics:
             self.metrics_cache.set(cache_key, file_metrics)
 
