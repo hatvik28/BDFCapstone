@@ -10,7 +10,7 @@ from spotbugs1.app.services.BugAnalyzer import BugAnalyzer
 from spotbugs1.app.services.LLMModel import LLMModel
 from spotbugs1.app.services.SolutionApplier import SolutionApplier
 from spotbugs1.app.services.Validator import Validator
-from spotbugs1.app.services.PMDAnalyzer import PMDAnalyzer  # PMD re-enabled
+from spotbugs1.app.services.PMDAnalyzer import PMDAnalyzer 
 from spotbugs1.app.services.MetricAnalyzer import CKMetricsAnalyzer
 from spotbugs1.app.services.MetricAnalyzer import SolutionMetricsAnalyzer
 from spotbugs1.app.services.MetricAnalyzer import organize_ck_outputs
@@ -99,34 +99,24 @@ class JavaAnalysisFacade:
 
     def analyze_github_repository(self, github_url: str) -> List[Dict]:
         """Fetch Java files from a GitHub repository."""
-        # Extract repository details
         repo_name, file_path = CodeFetcher.extract_repo_details(github_url)
         if not repo_name:
             raise ValueError("Invalid GitHub URL")
 
-        # Store repository name
         self.repo_name = repo_name
-
-        # Update fetcher with new repo name
         self.github_fetcher.repo_name = repo_name
-
         self.github_fetcher.cleanup_directory(self.output_dir)
-        self._clean_bin_directory()  # Clean bin directory before cloning new repo
-
-        # Clone the repository
+        self._clean_bin_directory()  # 
         self.github_fetcher.clone_repo()
 
-        # Check if it's a fork and set up upstream if needed
         if self.github_fetcher.is_fork():
             print(" Setting up upstream remote for forked repository")
             if not self.github_fetcher.setup_upstream():
                 print("  Failed to set up upstream remote")
 
-        # Clear the initial metrics cache when analyzing a new repo
         self._initial_metrics_cache.clear()
         print(" Cleared initial metrics cache for new repository analysis.")
 
-        # Fetch files
         return self.github_fetcher.fetch_java_files_from_local_clone()
 
     def analyze_file(self, filename: str, tool: str = 'spotbugs') -> Tuple[str, List[Dict], int, List[Dict]]:
@@ -137,8 +127,7 @@ class JavaAnalysisFacade:
             file_path = os.path.join(self.output_dir, filename)
             with open(file_path, 'r') as f:
                 content = f.read()
-
-            # Generate unique report paths for each file and tool
+                
             report_filename = f"{tool}_report_{os.path.basename(filename)}.xml"
             report_path = os.path.join(self.output_dir, report_filename)
 
@@ -181,7 +170,6 @@ class JavaAnalysisFacade:
 
             num_bugs = len(bugs)
 
-            # Get metrics - Check initial cache first
             base_filename = os.path.basename(filename)
             if base_filename in self._initial_metrics_cache:
                 print(
@@ -191,25 +179,20 @@ class JavaAnalysisFacade:
                 print(
                     f" Calculating initial metrics for {base_filename}")
                 metrics_list = self.ck_metrics.get_original_metrics(
-                    filename)  # filename has path needed by CK
+                    filename)  
                 metrics = metrics_list[0] if metrics_list else {}
                 if metrics and "error" not in metrics:
                     print(
                         f" Storing initial metrics for {base_filename}")
-                    # Store in persistent cache
+
                     self._initial_metrics_cache[base_filename] = metrics
                 else:
-                    print(
-                        f"  Failed to calculate or invalid initial metrics for {base_filename}")
-                    # Ensure error state if calculation fails
+                    print(f"  Failed to calculate or invalid initial metrics for {base_filename}")
                     metrics = {"error": "Failed to calculate initial metrics"}
 
             print("[CKMetricsAnalyzer] Metrics Found:", metrics)
 
-            # Cache the results for time-based expiration
             self._update_cache(filename, bugs, metrics, tool)
-
-            # Ensure metrics is returned as a list to match frontend expectations
             metrics_to_return = [
                 metrics] if metrics and "error" not in metrics else []
             return content, bugs, num_bugs, metrics_to_return
@@ -224,7 +207,6 @@ class JavaAnalysisFacade:
         if not self.llm_model:
             raise ValueError("LLM API key not provided")
 
-        # Create temp directories if needed
         os.makedirs("temp_ck", exist_ok=True)
         os.makedirs("ck_output_solutions", exist_ok=True)
 
@@ -247,7 +229,6 @@ class JavaAnalysisFacade:
         if not solutions:
             return []
 
-        # Apply each solution to a temp file (without metrics calculation)
         for i, sol in enumerate(solutions):
             try:
                 # Apply fix to a temp file
@@ -259,7 +240,6 @@ class JavaAnalysisFacade:
                     solution_number=i + 1
                 )
 
-                # Store the solution directory for later metrics calculation
                 sol["solution_dir"] = solution_dir
                 sol["solution_number"] = i + 1
 
@@ -308,20 +288,19 @@ class JavaAnalysisFacade:
 
                 ck_improvements = {}
                 for key in ["wmc", "loc"]:
-                    # Use initial_metrics for 'before'
+          
                     before = int(initial_metrics.get(key, 0))
-                    # Use solution_metrics for 'after'
                     after = int(solution_metrics.get(key, 0))
                     ck_improvements[key] = {
                         "before": before,  
                         "after": after,   
-                        "delta": after - before  # Change from initial state
+                        "delta": after - before  
                     }
 
                 metrics_data = {
                     "original_metrics": initial_metrics,  
                     "solution_metrics": solution_metrics,  
-                    "improvements": ck_improvements  # Comparison between initial and current fix
+                    "improvements": ck_improvements  
                 }
 
             except Exception as e:
@@ -345,7 +324,6 @@ class JavaAnalysisFacade:
         Validate if a specific bug has been fixed for both PMD and Spotbugs.
         """
         try:
-            # Get validation results from validator
             validation_results = self.validator.validate_bug(
                 filename=filename,
                 bug_line=bug_line,
@@ -448,7 +426,6 @@ class JavaAnalysisFacade:
                 bug_description=bug_description
             )
 
-        # Cache the results
         self._update_cache(filename, file_bugs, {}, 'spotbugs')
         return file_bugs
 
@@ -559,12 +536,11 @@ class JavaAnalysisFacade:
 
         # Clear bug analysis cache for different tools
         for tool in ['spotbugs', 'pmd']:
-            # Key format used in _update_cache
             cache_key = f"{base_filename}_{tool}"
             if cache_key in self._bugs_cache:
                 del self._bugs_cache[cache_key]
                 print(f" Removed bugs cache for {cache_key}")
-            if cache_key in self._metrics_cache:  # Clear time-based metrics cache
+            if cache_key in self._metrics_cache:  
                 del self._metrics_cache[cache_key]
                 print(
                     f" Removed time-based metrics cache for {cache_key}")
