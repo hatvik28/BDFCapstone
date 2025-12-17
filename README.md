@@ -150,6 +150,6 @@ Choose between:
 - [CK Metrics](https://github.com/mauricioaniche/ck) - Code metrics calculator
 - [Google Java Format](https://github.com/google/google-java-format) - Code formatter
 
-**Built with ❤️ at Penn State**
+**Built for Penn State CapStone**
 
 </div>
