@@ -1,9 +1,5 @@
 BDF Capstone - Java Bug Detection & Fixing Tool
 
-![Python](https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python&logoColor=white)
-![Flask](https://img.shields.io/badge/Flask-2.3.3-green?style=for-the-badge&logo=flask&logoColor=white)
-![Java](https://img.shields.io/badge/Java-Analysis-orange?style=for-the-badge&logo=openjdk&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)
 
 An AI-powered tool for detecting, analyzing, and automatically fixing bugs in Java code**
 
