@@ -7,48 +7,48 @@ BDF Capstone - Java Bug Detection & Fixing Tool
 
 An AI-powered tool for detecting, analyzing, and automatically fixing bugs in Java code**
 
-## 🎯 Overview
+## Overview
 
 BDF Capstone is a web-based application that leverages static analysis tools and Large Language Models (LLMs) to detect bugs in Java code and generate intelligent fixes. The tool integrates with GitHub repositories, allowing seamless analysis, fixing, and committing of code changes.
 
-## ✨ Features
+## Features
 
-- **🔍 Dual Analysis Engines**
+- **Dual Analysis Engines**
 
   - **SpotBugs**: Bytecode-level analysis for detecting runtime bugs
   - **PMD**: Static source code analysis for code quality issues
 
-- **🤖 AI-Powered Bug Fixing**
+- **AI-Powered Bug Fixing**
 
   - Generates multiple solution alternatives using OpenAI/Claude
   - User feedback integration for solution refinement
   - Code formatting with Google Java Format
 
-- **📊 CK Metrics Analysis**
+- **CK Metrics Analysis**
 
   - Tracks code quality metrics before and after fixes
   - Measures WMC (Weighted Method Count), LOC (Lines of Code), and more
   - Visualizes metric improvements
 
-- **🔗 GitHub Integration**
+- **GitHub Integration**
 
   - Clone and analyze any public/private repository
   - Commit and push fixes directly to GitHub
   - Fork support with upstream remote configuration
 
-- **🎨 Modern Web Interface**
+- **Modern Web Interface**
   - Real-time bug detection results
   - Side-by-side code comparison (original vs. fixed)
   - Interactive solution selection and validation
 
-## 📋 Prerequisites
+## Prerequisites
 
 - **Python 3.8+**
 - **Java JDK 8+** (for SpotBugs bytecode analysis)
 - **Git** (for repository cloning)
 - **API Keys**: OpenAI and/or Anthropic Claude API key
 
-## 🚀 Installation
+## Installation
 
 ### 1. Clone the Repository
 
@@ -93,7 +93,7 @@ python run.py
 
 The application will be available at `http://localhost:5000`
 
-## 📖 Usage
+## Usage
 
 ### Step 1: Analyze a Repository
 
@@ -123,7 +123,7 @@ Choose between:
 5. Click **Commit Changes to GitHub** to push the fix
 
 
-## 📊 Supported Bug Types
+## Supported Bug Types
 
 ### SpotBugs Categories
 
@@ -143,7 +143,7 @@ Choose between:
 - Best Practice Violations
 
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [SpotBugs](https://spotbugs.github.io/) - Static analysis tool for Java
 - [PMD](https://pmd.github.io/) - Source code analyzer
